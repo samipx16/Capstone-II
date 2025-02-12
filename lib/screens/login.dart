@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dashboard.dart';
 
 class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.white, // Plain white background
+        color: Colors.white,
         child: Column(
           children: [
             Expanded(
@@ -26,15 +27,11 @@ class LoginScreen extends StatelessWidget {
                       TextField(
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor:
-                              Color(0x1A00853E), // 10% opacity of #00853E
-                          prefixIcon: Icon(Icons.person,
-                              color: Color.fromARGB(255, 47, 48, 47)),
+                          fillColor: Color(0x1A00853E),
+                          prefixIcon: Icon(Icons.person, color: Colors.grey),
                           hintText: "Username",
                           border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(10), // Rounded corners
-                            borderSide: BorderSide(color: Color(0xFF00853E)),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
@@ -43,44 +40,43 @@ class LoginScreen extends StatelessWidget {
                         obscureText: true,
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor:
-                              Color(0x1A00853E), // 10% opacity of #00853E
-                          prefixIcon: Icon(Icons.lock,
-                              color: Color.fromARGB(255, 47, 48, 47)),
+                          fillColor: Color(0x1A00853E),
+                          prefixIcon: Icon(Icons.lock, color: Colors.grey),
                           hintText: "Password",
                           border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(10), // Rounded corners
-                            borderSide: BorderSide(color: Color(0xFF00853E)),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => DashboardScreen()));
+                          Navigator.pushNamed(context, '/dashboard');
                         },
-                        child: Text("SIGN IN",
-                            style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF00853E), // Green button
+                          backgroundColor: Color(0xFF00853E),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(10), // Rounded corners
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15), // Adjust size
+                              horizontal: 40, vertical: 15),
                         ),
+                        child: Text("SIGN IN",
+                            style: TextStyle(color: Colors.white)),
                       ),
                       TextButton(
                           onPressed: () {},
                           child: Text("Forgot Password?",
-                              style: TextStyle(
-                                  color: const Color.fromARGB(
-                                      255, 32, 127, 236)))),
+                              style: TextStyle(color: Colors.blue))),
+                      SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        child: Text("Create an Account",
+                            style:
+                                TextStyle(color: Colors.green, fontSize: 16)),
+                      ),
                     ],
                   ),
                 ),
@@ -90,8 +86,8 @@ class LoginScreen extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: Image.asset(
                 'assets/trees.png',
-                width: double.infinity, // Full width
-                fit: BoxFit.cover, // Cover the width
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
             ),
           ],
