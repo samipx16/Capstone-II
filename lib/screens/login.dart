@@ -8,17 +8,37 @@ class LoginScreen extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void _signIn(BuildContext context) async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Email and password cannot be empty")),
+      );
+      return;
+    }
+
     try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return Center(child: CircularProgressIndicator()); // Loading Indicator
+        },
+      );
+
       await _auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      Navigator.pop(context); // Close loading dialog
+
       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => DashboardScreen()));
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen()),
+      );
     } catch (e) {
+      Navigator.pop(context); // Close loading dialog in case of error
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login Failed: \${e.toString()}")),
+        SnackBar(content: Text("Login Failed: ${e.toString()}")),
       );
     }
   }

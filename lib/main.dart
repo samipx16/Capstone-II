@@ -37,7 +37,8 @@ class EcoEagleApp extends StatelessWidget {
         // Once Firebase is initialized, show the LoginScreen
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: RegisterScreen(),
+          home: LoginScreen(),
+
         );
       },
     );
