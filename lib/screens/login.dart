@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dashboard.dart';
 
 class LoginScreen extends StatelessWidget {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  void _signIn(BuildContext context) async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login Failed: \${e.toString()}")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,12 +49,13 @@ class LoginScreen extends StatelessWidget {
                                   color: Colors.black)),
                           SizedBox(height: 20),
                           TextField(
+                            controller: emailController,
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: Color(0x1A00853E), // 10% opacity of #00853E
                               prefixIcon: Icon(Icons.person,
                                   color: Color.fromARGB(255, 47, 48, 47)),
-                              hintText: "Username",
+                              hintText: "Email",
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10), // Rounded corners
                                 borderSide: BorderSide(color: Color(0xFF00853E)),
@@ -42,6 +64,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 10),
                           TextField(
+                            controller: passwordController,
                             obscureText: true,
                             decoration: InputDecoration(
                               filled: true,
@@ -57,12 +80,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 10),
                           ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => DashboardScreen()));
-                            },
+                            onPressed: () => _signIn(context),
                             child: Text("SIGN IN",
                                 style: TextStyle(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
@@ -100,4 +118,4 @@ class LoginScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}
