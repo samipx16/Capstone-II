@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "530304903122",
+    "project_id": "ecoeagle-1ff39",
+    "storage_bucket": "ecoeagle-1ff39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530304903122:android:054d7dcb9c3696e93d0a0b",
+        "android_client_info": {
+          "package_name": "com.example.ecoeagle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALTdhdCQ9Et3DigdPHkSE7mPIO7l2Wtuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
