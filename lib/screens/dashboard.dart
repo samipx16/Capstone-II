@@ -16,7 +16,8 @@ class DashboardScreen extends StatelessWidget {
   ];
 
   // Get the current weekday index (0 = Monday, 6 = Sunday)
-  final int currentDayIndex = DateTime.now().weekday - 1; // Adjust index (Monday = 0)
+  final int currentDayIndex =
+      DateTime.now().weekday - 1; // Adjust index (Monday = 0)
 
   @override
   Widget build(BuildContext context) {
@@ -41,19 +42,28 @@ class DashboardScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: const [
                       Column(children: [
-                        Icon(Icons.emoji_events, color: const Color(0xFFFAE500), size: 30),
-                        Text("65 pts",
-                          style: TextStyle(fontSize: 20),)
+                        Icon(Icons.emoji_events,
+                            color: const Color(0xFFFAE500), size: 30),
+                        Text(
+                          "65 pts",
+                          style: TextStyle(fontSize: 20),
+                        )
                       ]),
                       Column(children: [
-                        Icon(Icons.leaderboard, color: const Color(0xFFFAE500), size: 30),
-                        Text("#7th Rank",
-                          style: TextStyle(fontSize: 20),)
+                        Icon(Icons.leaderboard,
+                            color: const Color(0xFFFAE500), size: 30),
+                        Text(
+                          "#7th Rank",
+                          style: TextStyle(fontSize: 20),
+                        )
                       ]),
                       Column(children: [
-                        Icon(Icons.recycling, color: const Color(0xFFFAE500), size: 30),
-                        Text("13 Recycled",
-                          style: TextStyle(fontSize: 20),)
+                        Icon(Icons.recycling,
+                            color: const Color(0xFFFAE500), size: 30),
+                        Text(
+                          "13 Recycled",
+                          style: TextStyle(fontSize: 20),
+                        )
                       ]),
                     ],
                   ),
@@ -76,7 +86,8 @@ class DashboardScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => MapScreen()),
+                              MaterialPageRoute(
+                                  builder: (context) => MapScreen()),
                             );
                           },
                         ),
@@ -84,7 +95,8 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 10), // Spacing between Map and Leaderboard
+                  const SizedBox(
+                      width: 10), // Spacing between Map and Leaderboard
 
                   // Leaderboard Placeholder - Same size as Map
                   Expanded(
@@ -116,7 +128,6 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
 
               const SizedBox(height: 20),
 
@@ -161,12 +172,23 @@ class DashboardScreen extends StatelessWidget {
               backgroundColor: Colors.white,
               selectedItemColor: Colors.green, // Selected icon color
               unselectedItemColor: Colors.grey, // Unselected icon color
-              showUnselectedLabels: true, // Ensure all labels are always visible
+              showUnselectedLabels:
+                  true, // Ensure all labels are always visible
+              currentIndex: 0, // Adjust this dynamically if needed
+              onTap: (index) {
+                if (index == 1) {
+                  // Challenges tab
+                  Navigator.pushNamed(context, '/challenges');
+                }
+              },
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-                BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: "Challenges"),
-                BottomNavigationBarItem(icon: Icon(Icons.star), label: "Milestones"),
-                BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "Account"),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.emoji_events), label: "Challenges"),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.star), label: "Milestones"),
+                BottomNavigationBarItem(
+                    icon: Icon(Icons.account_circle), label: "Account"),
               ],
             ),
           ),
@@ -198,14 +220,23 @@ class DashboardScreen extends StatelessWidget {
 
   // Returns the weekday abbreviation
   String _getWeekdayLabel(int index) {
-    const List<String> weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const List<String> weekdays = [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ];
     return weekdays[index];
   }
 
   // Returns the current week's date range
   static String _getCurrentWeekDateRange() {
     DateTime now = DateTime.now();
-    DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Monday
+    DateTime startOfWeek =
+        now.subtract(Duration(days: now.weekday - 1)); // Monday
     DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
 
     return "${startOfWeek.day} - ${endOfWeek.day} ${_getMonthName(startOfWeek)}";
@@ -214,8 +245,18 @@ class DashboardScreen extends StatelessWidget {
   // Returns the month name
   static String _getMonthName(DateTime date) {
     const List<String> months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
     ];
     return months[date.month - 1];
   }
