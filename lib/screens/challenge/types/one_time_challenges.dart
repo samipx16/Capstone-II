@@ -1,0 +1,166 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class OneTimeChallengesScreen extends StatefulWidget {
+  const OneTimeChallengesScreen({Key? key}) : super(key: key);
+
+  @override
+  _OneTimeChallengesScreenState createState() =>
+      _OneTimeChallengesScreenState();
+}
+
+class _OneTimeChallengesScreenState extends State<OneTimeChallengesScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late User? _user;
+  int _currentIndex = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _user = _auth.currentUser;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          title: const Text("One-Time Challenges"),
+          backgroundColor: Colors.green),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestore
+            .collection('challenges')
+            .where('frequency', isEqualTo: 'one-time')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+                child: Text("No one-time challenges available."));
+          }
+
+          return ListView(
+            children: snapshot.data!.docs.map((challenge) {
+              var data = challenge.data() as Map<String, dynamic>;
+              return ListTile(
+                title: Text(data['title']),
+                subtitle: Text(data['description']),
+                trailing: ElevatedButton(
+                  onPressed: () => _startChallenge(challenge.id),
+                  child: const Text("Start"),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green,
+        onPressed: () {
+          Navigator.pushNamed(context, '/qr_scan');
+        },
+        shape: const CircleBorder(),
+        child: const Icon(Icons.qr_code, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  void _startChallenge(String challengeID) async {
+    if (_user == null) return;
+    await _firestore
+        .collection('user_challenges')
+        .doc("${_user!.uid}_$challengeID")
+        .set({
+      'userID': _user!.uid,
+      'challengeID': challengeID,
+      'status': 'in_progress',
+      'progress': 0,
+      'lastUpdated': FieldValue.serverTimestamp(),
+      'frequency': 'one-time',
+    });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Challenge Started!")));
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 6.0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildBottomNavItem(
+                      index: 0,
+                      icon: Icons.home,
+                      label: "Home",
+                      route: '/dashboard'),
+                  _buildBottomNavItem(
+                      index: 1,
+                      icon: Icons.emoji_events,
+                      label: "Challenges",
+                      route: '/challenges'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildBottomNavItem(
+                      index: 2,
+                      icon: Icons.star,
+                      label: "Milestones",
+                      route: '/milestones'),
+                  _buildBottomNavItem(
+                      index: 3,
+                      icon: Icons.account_circle,
+                      label: "Account",
+                      route: '/account'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavItem({
+    required int index,
+    required IconData icon,
+    required String label,
+    required String route,
+  }) {
+    bool isActive = _currentIndex == index;
+    return MaterialButton(
+      onPressed: () {
+        setState(() {
+          _currentIndex = index;
+        });
+        if (route.isNotEmpty) {
+          Navigator.pushNamed(context, route);
+        }
+      },
+      minWidth: 40,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isActive ? Colors.green : Colors.grey),
+          Text(label,
+              style: TextStyle(
+                  color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
