@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../tracking_methods.dart';
 
 class DailyChallengesScreen extends StatefulWidget {
   const DailyChallengesScreen({Key? key}) : super(key: key);
@@ -46,7 +47,8 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                 title: Text(data['title']),
                 subtitle: Text(data['description']),
                 trailing: ElevatedButton(
-                  onPressed: () => _startChallenge(challenge.id),
+                  onPressed: () => _startChallenge(challenge.id,
+                      data['trackingMethod'], data['requiredProgress']),
                   child: const Text("Start"),
                 ),
               );
@@ -67,21 +69,19 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
     );
   }
 
-  void _startChallenge(String challengeID) async {
+  void _startChallenge(
+      String challengeID, String trackingMethod, int requiredProgress) async {
     if (_user == null) return;
-    await _firestore
-        .collection('user_challenges')
-        .doc("${_user!.uid}_$challengeID")
-        .set({
-      'userID': _user!.uid,
-      'challengeID': challengeID,
-      'status': 'in_progress',
-      'progress': 0,
-      'lastUpdated': FieldValue.serverTimestamp(),
-      'frequency': 'daily',
-    });
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Challenge Started!")));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TrackingMethodsScreen(
+          challengeID: challengeID,
+          trackingMethod: trackingMethod,
+          requiredProgress: requiredProgress,
+        ),
+      ),
+    );
   }
 
   Widget _buildBottomNavBar() {
