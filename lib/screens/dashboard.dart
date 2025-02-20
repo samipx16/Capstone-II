@@ -222,6 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() {
                               _currentIndex = 2;
                             });
+                            Navigator.pushNamed(context, '/milestones');
                           },
                         ),
                         _buildBottomNavItem(
