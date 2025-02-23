@@ -130,12 +130,34 @@ class _SettingsPageState extends State<SettingsPage> {
 
 
   Future<void> _changePassword() async {
+    String? currentPassword = await _showCurrentPasswordDialog();
+
+    if (currentPassword == null || currentPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Password update canceled")),
+      );
+      return;
+    }
+
     if (_passwordController.text.isNotEmpty) {
       try {
-        await _user!.updatePassword(_passwordController.text);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Password updated successfully")),
-        );
+        // Get the current user
+        User? user = _auth.currentUser;
+        if (user != null) {
+          // Reauthenticate the user with the current password
+          AuthCredential credential = EmailAuthProvider.credential(
+            email: user.email!,
+            password: currentPassword, // User must enter this
+          );
+
+          await user.reauthenticateWithCredential(credential);
+
+          // If reauthentication is successful, update the password
+          await user.updatePassword(_passwordController.text);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Password updated successfully")),
+          );
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error updating password: $e")),
@@ -143,6 +165,42 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
   }
+  Future<String?> _showCurrentPasswordDialog() async {
+    TextEditingController currentPasswordController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Reauthenticate"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Enter your current password to proceed."),
+              TextField(
+                controller: currentPasswordController,
+                decoration: InputDecoration(labelText: "Current Password"),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null), // Cancel
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, currentPasswordController.text);
+              },
+              child: Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
