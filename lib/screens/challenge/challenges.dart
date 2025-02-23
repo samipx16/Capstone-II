@@ -149,8 +149,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       _buildBottomNavItem(
                           index: 3,
                           icon: Icons.account_circle,
-                          label: "Account",
-                          route: '/account'),
+                          label: "Accounts",
+                          route: '/accounts'),
                     ],
                   ),
                 ),

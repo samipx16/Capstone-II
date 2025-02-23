@@ -228,11 +228,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildBottomNavItem(
                           index: 3,
                           icon: Icons.account_circle,
-                          label: "Account",
+                          label: "Accounts",
                           onPressed: () {
                             setState(() {
                               _currentIndex = 3;
                             });
+                            Navigator.pushNamed(context, '/accounts');
                           },
                         ),
                       ],

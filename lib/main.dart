@@ -1,3 +1,4 @@
+import 'package:ecoeagle/screens/accounts/account.dart';
 import 'package:ecoeagle/screens/challenge/types/monthly_challenges.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -38,6 +39,8 @@ class EcoEagleApp extends StatelessWidget {
         '/monthlyChallenges': (context) => const MonthlyChallengesScreen(),
         '/oneTimeChallenges': (context) => const OneTimeChallengesScreen(),
         '/milestones': (context) => MilestonesPage(),
+        '/accounts': (context) => AccountPage(),
+
       },
     );
   }
