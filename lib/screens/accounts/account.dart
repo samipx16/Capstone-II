@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'SettingsPage.dart'; // Import the SettingsPage
 
 class AccountPage extends StatefulWidget {
   @override
@@ -11,6 +12,8 @@ class _AccountPageState extends State<AccountPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   User? _user;
+  String _displayName = "User";
+  String _photoURL = "";
   int _currentIndex = 3; // Set Account as active tab
 
   @override
@@ -25,6 +28,14 @@ class _AccountPageState extends State<AccountPage> {
       setState(() {
         _user = user;
       });
+
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          _displayName = userDoc['name'] ?? "User";
+          _photoURL = userDoc['photoURL'] ?? "";
+        });
+      }
     }
   }
 
@@ -48,12 +59,12 @@ class _AccountPageState extends State<AccountPage> {
             CircleAvatar(
               radius: 40,
               backgroundColor: Colors.grey[300],
-              backgroundImage: _user?.photoURL != null ? NetworkImage(_user!.photoURL!) : null,
-              child: _user?.photoURL == null ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
+              backgroundImage: _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
+              child: _photoURL.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey) : null,
             ),
             const SizedBox(height: 10),
             Text(
-              _user?.displayName ?? "User",
+              _displayName,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const Text("🏆 65 pts", style: TextStyle(fontSize: 16, color: Colors.black54)),
@@ -76,7 +87,7 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 20),
 
             // Settings Options
-            _buildSettingsOption("Settings"),
+            _buildSettingsOption("Settings", navigateToSettings: true),
             _buildSettingsOption("About"),
             _buildSettingsOption("Privacy Policy"),
             _buildSettingsOption("Logout", isLogout: true),
@@ -144,7 +155,7 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildSettingsOption(String label, {bool isLogout = false}) {
+  Widget _buildSettingsOption(String label, {bool isLogout = false, bool navigateToSettings = false}) {
     return ListTile(
       title: Text(
         label,
@@ -153,7 +164,16 @@ class _AccountPageState extends State<AccountPage> {
           color: isLogout ? Colors.red : Colors.black54,
         ),
       ),
-      onTap: isLogout ? _logout : () {},
+      onTap: isLogout
+          ? _logout
+          : navigateToSettings
+          ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsPage()),
+        ).then((_) => _fetchUserData()); // Refresh data on return
+      }
+          : () {},
     );
   }
 
