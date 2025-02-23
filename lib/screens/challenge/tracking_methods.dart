@@ -43,9 +43,33 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         .get();
 
     if (doc.exists) {
-      setState(() {
-        _progress = doc['progress'] ?? 0;
-      });
+      var data = doc.data() as Map<String, dynamic>;
+      Timestamp? lastUpdated = data['lastUpdated'];
+
+      DateTime today = DateTime.now();
+      DateTime lastUpdateDate =
+          lastUpdated?.toDate() ?? DateTime(2000); // Default to a long time ago
+
+      bool isSameDay = today.year == lastUpdateDate.year &&
+          today.month == lastUpdateDate.month &&
+          today.day == lastUpdateDate.day;
+
+      if (!isSameDay) {
+        debugPrint(
+            "Resetting challenge progress for ${widget.challengeID} as it's a new day.");
+        await _firestore
+            .collection('user_challenges')
+            .doc("${_user!.uid}_${widget.challengeID}")
+            .set({
+          'progress': 0,
+          'status': 'not_started',
+          'lastUpdated': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        setState(() {
+          _progress = data['progress'] ?? 0;
+        });
+      }
     }
   }
 
@@ -53,6 +77,10 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     if (_user == null) return;
 
     bool isCompleted = newProgress >= widget.requiredProgress;
+    String newStatus = isCompleted ? 'completed' : 'in_progress';
+
+    debugPrint(
+        "Updating challenge: ${widget.challengeID}, New Status: $newStatus, Progress: $newProgress");
 
     await _firestore
         .collection('user_challenges')
@@ -60,7 +88,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         .set({
       'userID': _user!.uid,
       'challengeID': widget.challengeID,
-      'status': isCompleted ? 'completed' : 'in_progress',
+      'status': newStatus,
       'progress': newProgress,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -77,6 +105,11 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   }
 
   Future<void> _handleSelfReport() async {
+    if (_user == null) return;
+
+    debugPrint(
+        "Self-report button pressed for Challenge: ${widget.challengeID}");
+
     await _updateChallengeProgress(widget.requiredProgress);
   }
 
@@ -103,14 +136,27 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   }
 
   Widget _buildTrackingUI() {
+    debugPrint(
+        "Tracking Method: ${widget.trackingMethod}, Progress: $_progress");
+
+    bool isCompleted = _progress >= widget.requiredProgress;
+
+    if (isCompleted) {
+      return const Text(
+        "✅ Challenge Completed!",
+        style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+      );
+    }
+
     switch (widget.trackingMethod) {
-      case "self_report":
+      case "Self Report":
         return ElevatedButton(
-          onPressed: _handleSelfReport,
+          onPressed: isCompleted ? null : _handleSelfReport,
           child: const Text("Mark as Completed"),
         );
 
-      case "photo_upload":
+      case "Photo Upload":
         return Column(
           children: [
             _image != null
@@ -119,21 +165,21 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
                 : const Text("No Image Selected"),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _handlePhotoUpload,
+              onPressed: isCompleted ? null : _handlePhotoUpload,
               child: const Text("Upload Photo"),
             ),
           ],
         );
 
-      case "qr":
+      case "QR":
         return ElevatedButton(
-          onPressed: _handleQRScan,
+          onPressed: isCompleted ? null : _handleQRScan,
           child: const Text("Scan QR Code"),
         );
 
-      case "manual_logging":
+      case "Manual Logging":
         return ElevatedButton(
-          onPressed: _handleManualLogging,
+          onPressed: isCompleted ? null : _handleManualLogging,
           child: const Text("Log Progress"),
         );
 
