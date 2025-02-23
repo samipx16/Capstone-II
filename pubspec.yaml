@@ -44,6 +44,7 @@ dependencies:
   geolocator: ^13.0.2
   image_picker: ^1.1.2
   qr_code_scanner: ^1.0.1
+  firebase_storage: ^12.4.3
 
 dev_dependencies:
   flutter_test:

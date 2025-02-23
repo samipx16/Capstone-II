@@ -88,6 +88,14 @@ packages:
       sha256: "7caf6a750a0c04effbb52a676dce9a4a592e10ad35c34d6d2d0e4811160d5670"
       url: "https://pub.dev"
     source: hosted
+    version: "1.19.0"
+  cross_file:
+    dependency: transitive
+    description:
+      name: cross_file
+      sha256: "7caf6a750a0c04effbb52a676dce9a4a592e10ad35c34d6d2d0e4811160d5670"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.3.4+2"
   crypto:
     dependency: transitive
@@ -249,6 +257,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.7+3"
+  firebase_storage:
+    dependency: "direct main"
+    description:
+      name: firebase_storage
+      sha256: "106a24e47cfd8a4c3cfb8fdc6624abd40fcc95198eee411e35fd8e3f203995bc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.4.3"
+  firebase_storage_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_storage_platform_interface
+      sha256: "08629a44abb9c885c5c5844da22df80a12b49a0671713acad64e8ac447c64937"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.3"
+  firebase_storage_web:
+    dependency: transitive
+    description:
+      name: firebase_storage_web
+      sha256: "1825db9e63121be02ec9b49a440e8348fc626a440e74b5b89b00f5ccd2f421d3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.10.10"
   firebase_ui_auth:
     dependency: "direct main"
     description:
@@ -596,7 +628,7 @@ packages:
       sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "1.15.0"
   nested:
     dependency: transitive
     description:

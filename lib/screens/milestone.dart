@@ -140,7 +140,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
                       _buildBottomNavItem(
                           index: 2, icon: Icons.star, label: "Milestones", route: ''),
                       _buildBottomNavItem(
-                          index: 3, icon: Icons.account_circle, label: "Account", route: '/account'),
+                          index: 3, icon: Icons.account_circle, label: "Accounts", route: '/accounts'),
                     ],
                   ),
                 ),
