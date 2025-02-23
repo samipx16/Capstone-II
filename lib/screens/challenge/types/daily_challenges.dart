@@ -68,7 +68,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                         today.month == lastUpdateDate.month &&
                         today.day == lastUpdateDate.day;
 
-                    if (!isSameDay) {
+                    if (!isSameDay && status != 'completed') {
                       _firestore
                           .collection('user_challenges')
                           .doc("${_user!.uid}_${challenge.id}")

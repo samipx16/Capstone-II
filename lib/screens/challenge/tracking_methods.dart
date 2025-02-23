@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart'; // Needed for kIsWeb
+import '../qr_scanner_screen.dart';
 
 class TrackingMethodsScreen extends StatefulWidget {
   final String challengeID;
@@ -44,32 +46,16 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
 
     if (doc.exists) {
       var data = doc.data() as Map<String, dynamic>;
-      Timestamp? lastUpdated = data['lastUpdated'];
 
-      DateTime today = DateTime.now();
-      DateTime lastUpdateDate =
-          lastUpdated?.toDate() ?? DateTime(2000); // Default to a long time ago
+      // ✅ Debugging Firestore data
+      debugPrint("🔥 Loaded Firestore Data: ${data.toString()}");
 
-      bool isSameDay = today.year == lastUpdateDate.year &&
-          today.month == lastUpdateDate.month &&
-          today.day == lastUpdateDate.day;
-
-      if (!isSameDay) {
-        debugPrint(
-            "Resetting challenge progress for ${widget.challengeID} as it's a new day.");
-        await _firestore
-            .collection('user_challenges')
-            .doc("${_user!.uid}_${widget.challengeID}")
-            .set({
-          'progress': 0,
-          'status': 'not_started',
-          'lastUpdated': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } else {
-        setState(() {
-          _progress = data['progress'] ?? 0;
-        });
-      }
+      setState(() {
+        _progress = data['progress'] ?? 0;
+      });
+    } else {
+      debugPrint(
+          "⚠️ No challenge progress found in Firestore for ${widget.challengeID}");
     }
   }
 
@@ -79,29 +65,57 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     bool isCompleted = newProgress >= widget.requiredProgress;
     String newStatus = isCompleted ? 'completed' : 'in_progress';
 
-    debugPrint(
-        "Updating challenge: ${widget.challengeID}, New Status: $newStatus, Progress: $newProgress");
-
-    await _firestore
+    final docRef = _firestore
         .collection('user_challenges')
-        .doc("${_user!.uid}_${widget.challengeID}")
-        .set({
-      'userID': _user!.uid,
-      'challengeID': widget.challengeID,
-      'status': newStatus,
-      'progress': newProgress,
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+        .doc("${_user!.uid}_${widget.challengeID}");
 
-    setState(() {
-      _progress = newProgress;
-    });
+    debugPrint("🚀 Attempting Firestore update:");
+    debugPrint("Challenge ID: ${widget.challengeID}");
+    debugPrint("New Progress: $newProgress");
+    debugPrint("New Status: $newStatus");
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content:
-              Text(isCompleted ? "Challenge Completed!" : "Progress Updated")),
-    );
+    try {
+      // Check if the document exists first
+      final docSnapshot = await docRef.get();
+      if (docSnapshot.exists) {
+        // Use update if the document already exists
+        await docRef.update({
+          'status': newStatus,
+          'progress': newProgress,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Create the document if it does not exist
+        await docRef.set({
+          'userID': _user!.uid,
+          'challengeID': widget.challengeID,
+          'status': newStatus,
+          'progress': newProgress,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Optionally, read the document back to verify the update
+      final updatedDoc = await docRef.get();
+      debugPrint("✅ Updated Firestore document data: ${updatedDoc.data()}");
+
+      setState(() {
+        _progress = newProgress;
+      });
+
+      debugPrint("✅ Firestore update successful!");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              isCompleted ? "🎉 Challenge Completed!" : "📈 Progress Updated"),
+        ),
+      );
+    } catch (e) {
+      debugPrint("❌ Firestore update failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Update failed: $e")),
+      );
+    }
   }
 
   Future<void> _handleSelfReport() async {
@@ -126,7 +140,92 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   }
 
   Future<void> _handleQRScan() async {
-    await _updateChallengeProgress(_progress + 1);
+    if (kIsWeb) {
+      // Manually enter a QR code on web (Chrome)
+      String? qrCode = await _showQRManualInputDialog();
+      if (qrCode != null) {
+        debugPrint("Manually Entered QR Code: $qrCode");
+        _processQRCode(qrCode);
+      }
+    } else {
+      // Mobile QR Scanner
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QRScannerScreen(),
+        ),
+      );
+      if (result != null) {
+        debugPrint("QR Code Scanned: $result");
+        _processQRCode(result);
+      }
+    }
+  }
+
+// Function to show manual QR code input on Chrome
+  Future<String?> _showQRManualInputDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        TextEditingController qrController = TextEditingController();
+        return AlertDialog(
+          title: const Text("Enter QR Code"),
+          content: TextField(
+            controller: qrController,
+            decoration: const InputDecoration(hintText: "Enter QR Code"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, qrController.text),
+              child: const Text("Submit"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Process the scanned or manually entered QR Code
+  void _processQRCode(String qrCode) async {
+    if (_user == null) return;
+
+    debugPrint("🔍 Checking QR Code in Firestore: $qrCode");
+
+    try {
+      // Check if the QR Code exists in Firestore
+      DocumentSnapshot binDoc =
+          await _firestore.collection('recycling_bins').doc(qrCode).get();
+
+      if (binDoc.exists) {
+        debugPrint(
+            "✅ QR Code Matched: $qrCode - ${binDoc['bin name']} at ${binDoc['location']}");
+
+        // ✅ Call Firestore update
+        await _updateChallengeProgress(_progress + 1);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("✅ Scanned ${binDoc['bin name']} successfully!")),
+        );
+      } else {
+        debugPrint("❌ No matching QR Code found in Firestore: $qrCode");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  "❌ Invalid QR Code! This is not a valid recycling bin.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("⚠️ Firestore error while checking QR Code: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Error validating QR Code!")),
+      );
+    }
   }
 
   Future<void> _handleManualLogging() async {
