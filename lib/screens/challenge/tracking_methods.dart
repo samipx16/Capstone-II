@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart'; // Needed for kIsWeb
 import '../qr_scanner_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class TrackingMethodsScreen extends StatefulWidget {
   final String challengeID;
@@ -47,9 +48,6 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     if (doc.exists) {
       var data = doc.data() as Map<String, dynamic>;
 
-      // ✅ Debugging Firestore data
-      debugPrint("🔥 Loaded Firestore Data: ${data.toString()}");
-
       setState(() {
         _progress = data['progress'] ?? 0;
       });
@@ -68,11 +66,6 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     final docRef = _firestore
         .collection('user_challenges')
         .doc("${_user!.uid}_${widget.challengeID}");
-
-    debugPrint("🚀 Attempting Firestore update:");
-    debugPrint("Challenge ID: ${widget.challengeID}");
-    debugPrint("New Progress: $newProgress");
-    debugPrint("New Status: $newStatus");
 
     try {
       // Check if the document exists first
@@ -95,7 +88,6 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         });
       }
 
-      // Optionally, read the document back to verify the update
       final updatedDoc = await docRef.get();
       debugPrint("✅ Updated Firestore document data: ${updatedDoc.data()}");
 
@@ -128,14 +120,56 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   }
 
   Future<void> _handlePhotoUpload() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile == null) {
+      debugPrint("❌ No image selected");
+      return;
+    }
+
+    File imageFile = File(pickedFile.path);
+
+    // Generate a unique file name
+    String fileName =
+        "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
+    FirebaseStorage storage = FirebaseStorage.instance;
+    Reference storageRef = storage.ref().child(fileName);
+
+    try {
+      // Upload image to Firebase Storage
+      UploadTask uploadTask = storageRef.putFile(imageFile);
+      TaskSnapshot snapshot = await uploadTask;
+
+      // Get the image URL
+      String imageUrl = await snapshot.ref.getDownloadURL();
+
+      // Update Firestore with image URL
+      await _firestore
+          .collection('user_challenges')
+          .doc("${_user!.uid}_${widget.challengeID}")
+          .set({
+        'photoUrl': imageUrl, // Store URL in Firestore
+        'status': 'completed',
+        'progress': widget.requiredProgress,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Update state
       setState(() {
-        _image = File(pickedFile.path);
+        _image = imageFile;
       });
-      //Update Firestore Progress
-      await _updateChallengeProgress(widget.requiredProgress);
+
+      debugPrint("✅ Image uploaded successfully: $imageUrl");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("✅ Photo uploaded and challenge completed!")),
+      );
+    } catch (e) {
+      debugPrint("❌ Image upload failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Upload failed: $e")),
+      );
     }
   }
 
@@ -261,7 +295,30 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
             _image != null
                 ? Image.file(_image!,
                     width: 200, height: 200, fit: BoxFit.cover)
-                : const Text("No Image Selected"),
+                : FutureBuilder<DocumentSnapshot>(
+                    future: _firestore
+                        .collection('user_challenges')
+                        .doc("${_user!.uid}_${widget.challengeID}")
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      }
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return const Text("No Image Uploaded");
+                      }
+
+                      var data = snapshot.data!.data() as Map<String, dynamic>;
+                      String? imageUrl = data['photoUrl'];
+
+                      if (imageUrl != null) {
+                        return Image.network(imageUrl,
+                            width: 200, height: 200, fit: BoxFit.cover);
+                      } else {
+                        return const Text("No Image Uploaded");
+                      }
+                    },
+                  ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: isCompleted ? null : _handlePhotoUpload,
