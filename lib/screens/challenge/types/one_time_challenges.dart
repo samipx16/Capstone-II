@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../tracking_methods.dart';
 
 class OneTimeChallengesScreen extends StatefulWidget {
-  const OneTimeChallengesScreen({Key? key}) : super(key: key);
+  const OneTimeChallengesScreen({super.key});
 
   @override
   _OneTimeChallengesScreenState createState() =>

@@ -13,11 +13,11 @@ class TrackingMethodsScreen extends StatefulWidget {
   final int requiredProgress;
 
   const TrackingMethodsScreen({
-    Key? key,
+    super.key,
     required this.challengeID,
     required this.trackingMethod,
     required this.requiredProgress,
-  }) : super(key: key);
+  });
 
   @override
   _TrackingMethodsScreenState createState() => _TrackingMethodsScreenState();

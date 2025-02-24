@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChallengeLogScreen extends StatefulWidget {
-  const ChallengeLogScreen({Key? key}) : super(key: key);
+  const ChallengeLogScreen({super.key});
 
   @override
   _ChallengeLogScreenState createState() => _ChallengeLogScreenState();

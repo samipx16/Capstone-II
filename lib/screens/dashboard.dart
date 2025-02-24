@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   _DashboardScreenState createState() => _DashboardScreenState();

@@ -6,6 +6,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 
 class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
@@ -15,8 +17,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _picker = ImagePicker();
   User? _user;
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   File? _image;
 
   @override

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../tracking_methods.dart';
 
 class DailyChallengesScreen extends StatefulWidget {
-  const DailyChallengesScreen({Key? key}) : super(key: key);
+  const DailyChallengesScreen({super.key});
 
   @override
   _DailyChallengesScreenState createState() => _DailyChallengesScreenState();

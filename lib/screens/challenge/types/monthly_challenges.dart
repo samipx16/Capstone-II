@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class MonthlyChallengesScreen extends StatefulWidget {
-  const MonthlyChallengesScreen({Key? key}) : super(key: key);
+  const MonthlyChallengesScreen({super.key});
 
   @override
   _MonthlyChallengesScreenState createState() =>
