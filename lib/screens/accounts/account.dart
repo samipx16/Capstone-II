@@ -5,6 +5,8 @@ import 'SettingsPage.dart'; // Import the SettingsPage
 import 'about.dart';
 
 class AccountPage extends StatefulWidget {
+  const AccountPage({super.key});
+
   @override
   _AccountPageState createState() => _AccountPageState();
 }

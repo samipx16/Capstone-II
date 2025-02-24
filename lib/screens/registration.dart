@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dashboard.dart';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }

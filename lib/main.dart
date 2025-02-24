@@ -10,7 +10,6 @@ import 'screens/challenge/challenges.dart';
 import 'screens/challenge/types/daily_challenges.dart';
 import 'screens/challenge/types/weekly_challenges.dart';
 import 'screens/challenge/types/one_time_challenges.dart';
-import 'screens/challenge/types/monthly_challenges.dart';
 import 'package:ecoeagle/screens/milestone.dart';
 
 void main() async {
