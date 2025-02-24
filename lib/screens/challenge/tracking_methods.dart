@@ -173,6 +173,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     }
   }
 
+/*
   Future<void> _handleQRScan() async {
     if (kIsWeb) {
       // Manually enter a QR code on web (Chrome)
@@ -187,6 +188,29 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => QRScannerScreen(),
+        ),
+      );
+      if (result != null) {
+        debugPrint("QR Code Scanned: $result");
+        _processQRCode(result);
+      }
+    }
+  }
+  */
+  Future<void> _handleQRScan() async {
+    if (kIsWeb) {
+      // Manually enter a QR code on web
+      String? qrCode = await _showQRManualInputDialog();
+      if (qrCode != null) {
+        debugPrint("Manually Entered QR Code: $qrCode");
+        _processQRCode(qrCode);
+      }
+    } else {
+      // Use the new MobileScanner
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const QRScannerScreen(),
         ),
       );
       if (result != null) {
