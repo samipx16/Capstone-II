@@ -30,47 +30,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Welcome Back")),
       body: Container(
-        color: Colors.green.shade800, // Green background for the whole page
+        color: Colors.green.shade800,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 20),
+              const Text(
+                "Welcome Back!",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 5),
               const Text(
                 "Good Morning, Sustainability Hero!",
-                style: TextStyle(fontSize: 18, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
               ),
               const SizedBox(height: 20),
-              Card(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(26.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: const [
-                      Column(
-                        children: [
-                          Icon(Icons.emoji_events,
-                              color: Color(0xFFFAE500), size: 30),
-                          Text("65 pts", style: TextStyle(fontSize: 20))
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          Icon(Icons.leaderboard,
-                              color: Color(0xFFFAE500), size: 30),
-                          Text("#7th Rank", style: TextStyle(fontSize: 20))
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          Icon(Icons.recycling,
-                              color: Color(0xFFFAE500), size: 30),
-                          Text("13 Recycled", style: TextStyle(fontSize: 20))
-                        ],
-                      ),
-                    ],
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 20, horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: CircularProgressIndicator(
+                                    value: 65 / 100, // Example progress
+                                    backgroundColor: Colors.grey[300],
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF2E7D32)), // Green progress
+                                    strokeWidth: 6,
+                                  ),
+                                ),
+                                Icon(Icons.emoji_events,
+                                    color: Color(0xFFFAE500), size: 30),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Text("65 pts",
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold))
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Icon(Icons.emoji_events,
+                                color: Color(0xFFFAE500), size: 30),
+                            SizedBox(height: 4),
+                            Text("#7th",
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black)),
+                            Text("Your Rank",
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Icon(Icons.recycling,
+                                color: Color(0xFFFAE500), size: 30),
+                            SizedBox(height: 4),
+                            Text("13",
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black)),
+                            Text("Recycled",
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
