@@ -33,11 +33,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Container(
         color: Colors.green.shade800,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               const Text(
                 "Welcome Back!",
                 style: TextStyle(
@@ -54,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.white70,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 4),
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -67,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   elevation: 4,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 20, horizontal: 24),
+                        vertical: 14, horizontal: 24),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -132,25 +132,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 4),
               // Row for Map and Leaderboard Widgets
               Row(
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 130,
+                      height: 160,
                       child: Card(
                         color: Colors.white,
-                        child: ListTile(
-                          leading: const Icon(Icons.map, color: Colors.green),
-                          title: const Text("Find the closest Recycle Bin"),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const MapScreen()),
-                            );
-                          },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.location_on,
+                                color: Colors.grey, size: 40),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Map",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Find the closest\nRecycle Bin",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -158,22 +175,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: SizedBox(
-                      height: 130,
+                      height: 160,
                       child: Card(
                         color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text("Leaderboard",
-                                  style: TextStyle(
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    "Leaderboard",
+                                    style: TextStyle(
+                                      fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16)),
-                              SizedBox(height: 8),
-                              Text("#1 - Niz Zhang"),
-                              Text("#2 - John Cena"),
-                              Text("#3 - Zack Ryder"),
+                                    ),
+                                  ),
+                                  Spacer(),
+                                  Icon(Icons.star, color: Colors.amber),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _leaderboardEntry(
+                                  "1. Nia Zhang", 4500, Colors.amber),
+                              _leaderboardEntry(
+                                  "2. John Cena", 3800, Colors.grey),
+                              _leaderboardEntry(
+                                  "3. Zack Ryder", 3700, Colors.brown),
                             ],
                           ),
                         ),
@@ -389,5 +421,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
       "Dec"
     ];
     return months[date.month - 1];
+  }
+
+  Widget _leaderboardEntry(String name, int points, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              name,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Spacer(),
+          Text(
+            "$points pts",
+            style: TextStyle(fontSize: 6, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 }
