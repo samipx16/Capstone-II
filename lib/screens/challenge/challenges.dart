@@ -109,68 +109,9 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // Bottom Navigation Bar
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 6.0,
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
-            child: Row(
-              children: [
-                // Left side items
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      buildBottomNavItem(
-                          context: context,
-                          index: 0,
-                          icon: Icons.home,
-                          label: "Home",
-                          route: '/dashboard',
-                          currentIndex: _currentIndex,
-                          onTap: _onItemTapped),
-                      buildBottomNavItem(
-                          context: context,
-                          index: 1,
-                          icon: Icons.emoji_events,
-                          label: "Challenges",
-                          route: '',
-                          currentIndex: _currentIndex,
-                          onTap: _onItemTapped),
-                    ],
-                  ),
-                ),
-                // Right side items
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      buildBottomNavItem(
-                          context: context,
-                          index: 2,
-                          icon: Icons.star,
-                          label: "Milestones",
-                          route: '/milestones',
-                          currentIndex: _currentIndex,
-                          onTap: _onItemTapped),
-                      buildBottomNavItem(
-                          context: context,
-                          index: 3,
-                          icon: Icons.account_circle,
-                          label: "Accounts",
-                          route: '/accounts',
-                          currentIndex: _currentIndex,
-                          onTap: _onItemTapped),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

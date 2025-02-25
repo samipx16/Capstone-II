@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
+import './widgets/bottom_navbar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -256,116 +257,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       // BottomAppBar wrapped with SafeArea and MediaQuery.removePadding to fix overflow
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: MediaQuery.removePadding(
-          context: context,
-          removeBottom: true,
-          child: BottomAppBar(
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 6.0,
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
-              child: Row(
-                children: [
-                  // Left side items (spaced evenly)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildBottomNavItem(
-                          index: 0,
-                          icon: Icons.home,
-                          label: "Home",
-                          onPressed: () {
-                            setState(() {
-                              _currentIndex = 0;
-                            });
-                          },
-                        ),
-                        _buildBottomNavItem(
-                          index: 1,
-                          icon: Icons.emoji_events,
-                          label: "Challenges",
-                          onPressed: () {
-                            setState(() {
-                              _currentIndex = 1;
-                            });
-                            Navigator.pushNamed(context, '/challenges');
-                          },
-                          offset: -10, // shift Challenges left
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Right side items (spaced evenly)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildBottomNavItem(
-                          index: 2,
-                          icon: Icons.star,
-                          label: "Milestones",
-                          onPressed: () {
-                            setState(() {
-                              _currentIndex = 2;
-                            });
-                            Navigator.pushNamed(context, '/milestones');
-                          },
-                        ),
-                        _buildBottomNavItem(
-                          index: 3,
-                          icon: Icons.account_circle,
-                          label: "Accounts",
-                          onPressed: () {
-                            setState(() {
-                              _currentIndex = 3;
-                            });
-                            Navigator.pushNamed(context, '/accounts');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
       ),
     );
   }
 
-  // Helper method to build a bottom nav item with an optional horizontal offset.
-  Widget _buildBottomNavItem({
-    required int index,
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    double offset = 0.0,
-  }) {
-    // Use green if the current nav item is active, grey otherwise.
-    Color activeColor = Colors.green;
-    Color inactiveColor = Colors.grey;
-    bool isActive = _currentIndex == index;
-    Color itemColor = isActive ? activeColor : inactiveColor;
-
-    return MaterialButton(
-      onPressed: onPressed,
-      minWidth: 40,
-      child: Transform.translate(
-        offset: Offset(offset, 0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: itemColor),
-            Text(label, style: TextStyle(color: itemColor, fontSize: 12)),
-          ],
-        ),
-      ),
-    );
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   // Returns the correct streak icon based on the contribution status

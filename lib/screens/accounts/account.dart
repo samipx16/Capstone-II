@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'SettingsPage.dart'; // Import the SettingsPage
 import 'about.dart';
+import '../widgets/bottom_navbar.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -32,7 +33,8 @@ class _AccountPageState extends State<AccountPage> {
         _user = user;
       });
 
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         setState(() {
           _displayName = userDoc['name'] ?? "User";
@@ -71,7 +73,10 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.grey.shade400, blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                        color: Colors.grey.shade400,
+                        blurRadius: 6,
+                        offset: Offset(0, 4)),
                   ],
                 ),
                 child: Column(
@@ -79,16 +84,24 @@ class _AccountPageState extends State<AccountPage> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.green.shade200,
-                      backgroundImage: _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
-                      child: _photoURL.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.white) : null,
+                      backgroundImage:
+                          _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
+                      child: _photoURL.isEmpty
+                          ? const Icon(Icons.person,
+                              size: 50, color: Colors.white)
+                          : null,
                     ),
                     const SizedBox(height: 10),
                     Text(
                       _displayName,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
                     const SizedBox(height: 5),
-                    const Text("🏆 65 pts", style: TextStyle(fontSize: 16, color: Colors.white70)),
+                    const Text("🏆 65 pts",
+                        style: TextStyle(fontSize: 16, color: Colors.white70)),
                   ],
                 ),
               ),
@@ -101,14 +114,19 @@ class _AccountPageState extends State<AccountPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.grey.shade300, blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 6,
+                        offset: Offset(0, 4)),
                   ],
                 ),
                 child: Column(
                   children: [
-                    _buildButton(Icons.campaign, "Challenges", '/challenges', Colors.green.shade700),
+                    _buildButton(Icons.campaign, "Challenges", '/challenges',
+                        Colors.green.shade700),
                     const SizedBox(height: 10),
-                    _buildButton(Icons.emoji_events, "Milestones", '/milestones', Colors.green.shade700),
+                    _buildButton(Icons.emoji_events, "Milestones",
+                        '/milestones', Colors.green.shade700),
                     const SizedBox(height: 20),
 
                     // Sub-container for Settings, About, Privacy, Logout
@@ -119,17 +137,19 @@ class _AccountPageState extends State<AccountPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center, // Ensures content aligns to center
-                        mainAxisAlignment: MainAxisAlignment.center,  // Centers items within column
+                        crossAxisAlignment: CrossAxisAlignment
+                            .center, // Ensures content aligns to center
+                        mainAxisAlignment: MainAxisAlignment
+                            .center, // Centers items within column
                         children: [
-                          _buildSettingsOption("Settings", navigateToSettings: true),
+                          _buildSettingsOption("Settings",
+                              navigateToSettings: true),
                           _buildSettingsOption("About", navigateToAbout: true),
                           _buildSettingsOption("Privacy Policy"),
                           _buildSettingsOption("Logout", isLogout: true),
                         ],
                       ),
                     ),
-
                   ],
                 ),
               ),
@@ -150,41 +170,18 @@ class _AccountPageState extends State<AccountPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // Bottom Navigation Bar
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 6.0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildBottomNavItem(0, Icons.home, "Home", '/dashboard'),
-                      _buildBottomNavItem(1, Icons.emoji_events, "Challenges", '/challenges'),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildBottomNavItem(2, Icons.star, "Milestones", '/milestones'),
-                      _buildBottomNavItem(3, Icons.account_circle, "Account", ''),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
       ),
     );
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   Widget _buildButton(IconData icon, String label, String route, Color color) {
     return Padding(
@@ -192,7 +189,8 @@ class _AccountPageState extends State<AccountPage> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           minimumSize: const Size(double.infinity, 45),
         ),
         onPressed: () {
@@ -203,19 +201,25 @@ class _AccountPageState extends State<AccountPage> {
           children: [
             Icon(icon, color: Colors.white),
             const SizedBox(width: 10),
-            Text(label, style: const TextStyle(fontSize: 16, color: Colors.white)),
+            Text(label,
+                style: const TextStyle(fontSize: 16, color: Colors.white)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSettingsOption(String label, {bool isLogout = false, bool navigateToSettings = false, bool navigateToAbout = false}) {
-    return Center( // Ensures horizontal centering
+  Widget _buildSettingsOption(String label,
+      {bool isLogout = false,
+      bool navigateToSettings = false,
+      bool navigateToAbout = false}) {
+    return Center(
+      // Ensures horizontal centering
       child: ListTile(
         title: Text(
           label,
-          textAlign: TextAlign.center, // Ensures text is centered inside ListTile
+          textAlign:
+              TextAlign.center, // Ensures text is centered inside ListTile
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -225,45 +229,21 @@ class _AccountPageState extends State<AccountPage> {
         onTap: isLogout
             ? _logout
             : navigateToSettings
-            ? () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => SettingsPage()),
-          ).then((_) => _fetchUserData()); // Refresh data on return
-        }
-            : navigateToAbout
-            ? () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AboutPage()),
-          ).then((_) => _fetchUserData()); // Refresh data on return
-        }
-            : () {},
-      ),
-    );
-  }
-
-
-
-
-  Widget _buildBottomNavItem(int index, IconData icon, String label, String route) {
-    bool isActive = _currentIndex == index;
-    return MaterialButton(
-      onPressed: () {
-        setState(() {
-          _currentIndex = index;
-        });
-        if (route.isNotEmpty) {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      minWidth: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isActive ? Colors.green : Colors.grey),
-          Text(label, style: TextStyle(color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
-        ],
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SettingsPage()),
+                    ).then((_) => _fetchUserData()); // Refresh data on return
+                  }
+                : navigateToAbout
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AboutPage()),
+                        ).then(
+                            (_) => _fetchUserData()); // Refresh data on return
+                      }
+                    : () {},
       ),
     );
   }
