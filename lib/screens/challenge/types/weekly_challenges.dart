@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../tracking_methods.dart';
+import './../../widgets/bottom_navbar.dart';
 
 class WeeklyChallengesScreen extends StatefulWidget {
   const WeeklyChallengesScreen({super.key});
@@ -100,8 +101,15 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
         child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar:
+          BottomNavBar(currentIndex: _currentIndex, onTap: _onItemTapped),
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   void _startChallenge(
@@ -139,63 +147,6 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
           trackingMethod: trackingMethod!,
           requiredProgress: requiredProgress!,
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 6.0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildBottomNavItem(
-              index: 0, icon: Icons.home, label: "Home", route: '/dashboard'),
-          _buildBottomNavItem(
-              index: 1,
-              icon: Icons.emoji_events,
-              label: "Challenges",
-              route: '/challenges'),
-          _buildBottomNavItem(
-              index: 2,
-              icon: Icons.star,
-              label: "Milestones",
-              route: '/milestones'),
-          _buildBottomNavItem(
-              index: 3,
-              icon: Icons.account_circle,
-              label: "Account",
-              route: '/account'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem(
-      {required int index,
-      required IconData icon,
-      required String label,
-      required String route}) {
-    bool isActive = _currentIndex == index;
-    return MaterialButton(
-      onPressed: () {
-        setState(() {
-          _currentIndex = index;
-        });
-        if (route.isNotEmpty) {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      minWidth: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isActive ? Colors.green : Colors.grey),
-          Text(label,
-              style: TextStyle(
-                  color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
-        ],
       ),
     );
   }
