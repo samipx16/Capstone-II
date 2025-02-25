@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/bottom_navbar.dart';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -123,16 +124,22 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildBottomNavItem(
+                      buildBottomNavItem(
+                          context: context,
                           index: 0,
                           icon: Icons.home,
                           label: "Home",
-                          route: '/dashboard'),
-                      _buildBottomNavItem(
+                          route: '/dashboard',
+                          currentIndex: _currentIndex,
+                          onTap: _onItemTapped),
+                      buildBottomNavItem(
+                          context: context,
                           index: 1,
                           icon: Icons.emoji_events,
                           label: "Challenges",
-                          route: ''),
+                          route: '',
+                          currentIndex: _currentIndex,
+                          onTap: _onItemTapped),
                     ],
                   ),
                 ),
@@ -141,16 +148,22 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildBottomNavItem(
+                      buildBottomNavItem(
+                          context: context,
                           index: 2,
                           icon: Icons.star,
                           label: "Milestones",
-                          route: '/milestones'),
-                      _buildBottomNavItem(
+                          route: '/milestones',
+                          currentIndex: _currentIndex,
+                          onTap: _onItemTapped),
+                      buildBottomNavItem(
+                          context: context,
                           index: 3,
                           icon: Icons.account_circle,
                           label: "Accounts",
-                          route: '/accounts'),
+                          route: '/accounts',
+                          currentIndex: _currentIndex,
+                          onTap: _onItemTapped),
                     ],
                   ),
                 ),
@@ -160,6 +173,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         ),
       ),
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   Widget _buildChallengeCategory({
@@ -212,35 +231,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavItem({
-    required int index,
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    bool isActive = _currentIndex == index;
-    return MaterialButton(
-      onPressed: () {
-        setState(() {
-          _currentIndex = index;
-        });
-        if (route.isNotEmpty) {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      minWidth: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isActive ? Colors.green : Colors.grey),
-          Text(label,
-              style: TextStyle(
-                  color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
-        ],
       ),
     );
   }
