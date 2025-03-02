@@ -32,7 +32,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: Colors.green.shade800,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF03AC52),
+              Color(0xFF00853E),
+            ],
+            stops: [0.11, 0.68],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 18),
           child: Column(

@@ -27,7 +27,14 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Daily Challenges"), backgroundColor: Colors.green),
+          title: const Text(
+            "Daily Challenges",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.green),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('challenges')

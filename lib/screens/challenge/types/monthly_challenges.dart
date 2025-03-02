@@ -27,7 +27,13 @@ class _MonthlyChallengesScreenState extends State<MonthlyChallengesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Monthly Challenges"),
+          title: const Text(
+            "Monthtly Challenges",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: Colors.green),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
