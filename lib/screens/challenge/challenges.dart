@@ -16,14 +16,18 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   final List<Map<String, dynamic>> challengeTypes = [
     {
       "title": "Daily Challenges",
-      "description": "Complete your Daily Challenges to earn your daily points.",
+      "description":
+          "Complete your Daily Challenges to earn your daily points.",
       "icon": Icons.calendar_today,
       "route": "/dailyChallenges",
-      "image": "assets/task-img.png", // Replace with actual image path
+      "image": "assets/task-img.png",
       "challenges": [
         "Go Plastic-Free Self-report avoiding plastic for a whole day.",
         "Recycle 1 Item Scan QR codes at a recycling bin.",
-        //"Use a reusable water bottle"
+        "Refill Your Bottle : Refill your water bottle or cup at the refill stations around campus",
+        "Public Transport : Report yourself using public transport",
+        "Turn-off Lights : Self-report turning off all unnecessary lights",
+        "Walk/Bike to Class : Log your walk/bike ride to class",
       ]
     },
     {
@@ -33,20 +37,26 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "route": "/weeklyChallenges",
       "image": "assets/task-img.png",
       "challenges": [
-       // "Use public transport for a day",
-        "Walk/Bike to Class Log your walk/bike ride to class",
+        "Avoid Plastics : Avoid single use plastics for a week",
+        "Eco-Friendly Purchase : Report an eco-friendly purchase you've made within the week",
+        "Local Cleanup Effort : Participate in a local cleanup effort",
+        "Meatless Days : Go meatless for at least 3 days of the week",
+        "Litter Cleanup : Pick up at least 10 pieces of litter that you see",
       ]
     },
     {
       "title": "One-time Challenges",
-      "description": "Complete your One-time Challenge to earn a large amount of points.",
+      "description":
+          "Complete your One-time Challenge to earn a large amount of points.",
       "icon": Icons.verified,
       "route": "/oneTimeChallenges",
       "image": "assets/task-img.png",
       "challenges": [
         "Plant a Tree : Upload a photo of the tree you planted.",
-        //"Donate old clothes",
-        //"Switch to a sustainable brand"
+        "Start a Home Garden : Start a home garden",
+        "Donate Clothes : Donate your old clothes",
+        "Make a Compost Bin : Set up a compost bin",
+        "Go to a Recycling Event: Attend a recycling workshop or event in your area"
       ]
     }
   ];
@@ -202,7 +212,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: const TextStyle(fontSize: 14, color: Colors.black54),
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.black54),
                     ),
                     const SizedBox(height: 6),
 
@@ -211,7 +222,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       children: [
                         // Green rounded task count
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: Colors.green,
                             borderRadius: BorderRadius.circular(12),
@@ -229,7 +241,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
                         // "Available Task" text
                         const Text(
-                          "Available Task",
+                          "Task Count",
                           style: TextStyle(
                             color: Colors.green,
                             fontSize: 14,
@@ -248,7 +260,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 child: Image.asset(
                   imagePath,
                   width: 60,
-                  height: 60, 
+                  height: 60,
                   fit: BoxFit.cover,
                 ),
               ),
