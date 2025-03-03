@@ -1,5 +1,4 @@
 import 'package:ecoeagle/screens/accounts/account.dart';
-import 'package:ecoeagle/screens/challenge/types/monthly_challenges.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'screens/login.dart';
@@ -36,7 +35,6 @@ class EcoEagleApp extends StatelessWidget {
         '/challenges': (context) => ChallengeScreen(),
         '/dailyChallenges': (context) => const DailyChallengesScreen(),
         '/weeklyChallenges': (context) => const WeeklyChallengesScreen(),
-        '/monthlyChallenges': (context) => const MonthlyChallengesScreen(),
         '/oneTimeChallenges': (context) => const OneTimeChallengesScreen(),
         '/milestones': (context) => MilestonesPage(),
         '/accounts': (context) => AccountPage(),

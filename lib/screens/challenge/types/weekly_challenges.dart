@@ -21,6 +21,55 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
   void initState() {
     super.initState();
     _user = _auth.currentUser;
+    _checkForWeeklyReset();
+  }
+
+  /// Checks if it's a new week and resets weekly challenges
+  void _checkForWeeklyReset() async {
+    if (_user == null) return;
+
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(_user!.uid).get();
+    Timestamp? lastReset = userDoc.exists ? userDoc['lastWeeklyReset'] : null;
+
+    DateTime now = DateTime.now();
+    DateTime lastResetDate = lastReset?.toDate() ?? DateTime(2000);
+
+    // Check if today is Monday and last reset was in a previous week
+    bool isNewWeek = now.weekday == DateTime.monday &&
+        (now.difference(lastResetDate).inDays >= 7 ||
+            lastResetDate.weekday != DateTime.monday);
+
+    if (isNewWeek) {
+      await _resetWeeklyChallenges();
+    }
+  }
+
+  /// Resets all weekly challenges for the user
+  Future<void> _resetWeeklyChallenges() async {
+    if (_user == null) return;
+
+    WriteBatch batch = _firestore.batch();
+
+    QuerySnapshot userChallengesSnapshot = await _firestore
+        .collection('user_challenges')
+        .where('userID', isEqualTo: _user!.uid)
+        .where('frequency', isEqualTo: 'weekly')
+        .get();
+
+    for (var doc in userChallengesSnapshot.docs) {
+      batch.update(doc.reference, {
+        'progress': 0,
+        'status': 'not_started',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    }
+
+    batch.update(_firestore.collection('users').doc(_user!.uid), {
+      'lastWeeklyReset': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
   }
 
   @override

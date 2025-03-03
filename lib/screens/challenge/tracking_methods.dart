@@ -121,16 +121,22 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
 
   Future<void> _handlePhotoUpload() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    // Ask user whether they want to use camera or gallery
+    final ImageSource? source = await _selectImageSource();
+    if (source == null) return; // User canceled the selection
+
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile == null) {
       debugPrint("❌ No image selected");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ No image selected")),
+      );
       return;
     }
 
     File imageFile = File(pickedFile.path);
-
-    // Generate a unique file name
     String fileName =
         "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
     FirebaseStorage storage = FirebaseStorage.instance;
@@ -149,13 +155,14 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
           .collection('user_challenges')
           .doc("${_user!.uid}_${widget.challengeID}")
           .set({
+        'challengeID': widget.challengeID,
         'photoUrl': imageUrl, // Store URL in Firestore
         'status': 'completed',
         'progress': widget.requiredProgress,
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Update state
+      // Update UI state
       setState(() {
         _image = imageFile;
       });
@@ -173,30 +180,33 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
     }
   }
 
-/*
-  Future<void> _handleQRScan() async {
-    if (kIsWeb) {
-      // Manually enter a QR code on web (Chrome)
-      String? qrCode = await _showQRManualInputDialog();
-      if (qrCode != null) {
-        debugPrint("Manually Entered QR Code: $qrCode");
-        _processQRCode(qrCode);
-      }
-    } else {
-      // Mobile QR Scanner
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => QRScannerScreen(),
-        ),
-      );
-      if (result != null) {
-        debugPrint("QR Code Scanned: $result");
-        _processQRCode(result);
-      }
-    }
+  /// Show a dialog for the user to pick between Camera or Gallery
+  Future<ImageSource?> _selectImageSource() async {
+    return await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Choose Image Source"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera),
+                title: const Text("Take a Photo"),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text("Choose from Gallery"),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
-  */
+
   Future<void> _handleQRScan() async {
     if (kIsWeb) {
       // Manually enter a QR code on web
