@@ -16,14 +16,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   final List<Map<String, dynamic>> challengeTypes = [
     {
       "title": "Daily Challenges",
-      "description":
-          "Complete your Daily Challenges to earn your daily points.",
+      "description": "Complete your Daily Challenges to earn your daily points.",
       "icon": Icons.calendar_today,
       "route": "/dailyChallenges",
+      "image": "assets/task-img.png", // Replace with actual image path
       "challenges": [
         "Go Plastic-Free Self-report avoiding plastic for a whole day.",
-        "Recycle 1 Item Scan QR codes at a recycling bins.",
-        "Use a reusable water bottle"
+        "Recycle 1 Item Scan QR codes at a recycling bin.",
+        //"Use a reusable water bottle"
       ]
     },
     {
@@ -31,31 +31,22 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "description": "Complete your Weekly Challenges to earn more points.",
       "icon": Icons.date_range,
       "route": "/weeklyChallenges",
+      "image": "assets/task-img.png",
       "challenges": [
-        "Use public transport for a day",
+       // "Use public transport for a day",
         "Walk/Bike to Class Log your walk/bike ride to class",
       ]
     },
     {
-      "title": "Monthly Challenges",
-      "description": "Complete your Monthly Challenges to earn big rewards.",
-      "icon": Icons.event,
-      "route": "/monthlyChallenges",
-      "challenges": [
-        "Reduce water usage by 10%",
-        "Volunteer for an environmental cause",
-        "Use no single-use plastics for a week"
-      ]
-    },
-    {
       "title": "One-time Challenges",
-      "description": "Complete your One-time Challenge to get large points.",
+      "description": "Complete your One-time Challenge to earn a large amount of points.",
       "icon": Icons.verified,
       "route": "/oneTimeChallenges",
+      "image": "assets/task-img.png",
       "challenges": [
-        "Plant a Tree Upload a photo of the tree you planted.",
-        "Donate old clothes",
-        "Switch to a sustainable brand"
+        "Plant a Tree : Upload a photo of the tree you planted.",
+        //"Donate old clothes",
+        //"Switch to a sustainable brand"
       ]
     }
   ];
@@ -77,14 +68,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     String query = _searchController.text.toLowerCase();
     setState(() {
       _filteredChallenges = challengeTypes.where((category) {
-        bool matchesCategory =
-            category["title"].toLowerCase().contains(query) ||
-                category["description"].toLowerCase().contains(query);
-
-        bool matchesChallenges = (category["challenges"] as List<String>)
-            .any((challenge) => challenge.toLowerCase().contains(query));
-
-        return matchesCategory || matchesChallenges;
+        return category["title"].toLowerCase().contains(query) ||
+            category["description"].toLowerCase().contains(query);
       }).toList();
     });
   }
@@ -101,7 +86,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           ),
         ),
         backgroundColor: Colors.green,
-        actions: [],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -139,6 +123,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                           description: category["description"],
                           icon: category["icon"],
                           route: category["route"],
+                          imagePath: category["image"],
+                          taskCount: (category["challenges"] as List).length,
                         );
                       },
                     ),
@@ -177,6 +163,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     required String description,
     required IconData icon,
     required String route,
+    required String imagePath,
+    required int taskCount,
   }) {
     return GestureDetector(
       onTap: () {
@@ -189,15 +177,17 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Icon on the left
               CircleAvatar(
-                radius: 30,
+                radius: 35,
                 backgroundColor: Colors.green.shade100,
-                child: Icon(icon, color: Colors.green, size: 30),
+                child: Icon(icon, color: Colors.green, size: 35),
               ),
               const SizedBox(width: 16),
-              // Category Title
+
+              // Expanded Title, Description & Task Count
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,20 +195,63 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: const TextStyle(color: Colors.black54),
+                      style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Task Count Row (Green Box + "Available Task" Text)
+                    Row(
+                      children: [
+                        // Green rounded task count
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "$taskCount",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // "Available Task" text
+                        const Text(
+                          "Available Task",
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              // Navigation Arrow
-              const Icon(Icons.arrow_forward_ios, color: Colors.green),
+
+              // Image on the right
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  imagePath,
+                  width: 60,
+                  height: 60, 
+                  fit: BoxFit.cover,
+                ),
+              ),
             ],
           ),
         ),
