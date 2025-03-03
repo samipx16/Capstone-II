@@ -10,6 +10,8 @@ class ChallengeScreen extends StatefulWidget {
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
   int _currentIndex = 1; // Set Challenges as active tab
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _filteredChallenges = [];
 
   final List<Map<String, dynamic>> challengeTypes = [
     {
@@ -18,26 +20,74 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           "Complete your Daily Challenges to earn your daily points.",
       "icon": Icons.calendar_today,
       "route": "/dailyChallenges",
+      "challenges": [
+        "Go Plastic-Free Self-report avoiding plastic for a whole day.",
+        "Recycle 1 Item Scan QR codes at a recycling bins.",
+        "Use a reusable water bottle"
+      ]
     },
     {
       "title": "Weekly Challenges",
       "description": "Complete your Weekly Challenges to earn more points.",
       "icon": Icons.date_range,
       "route": "/weeklyChallenges",
+      "challenges": [
+        "Use public transport for a day",
+        "Walk/Bike to Class Log your walk/bike ride to class",
+      ]
     },
     {
       "title": "Monthly Challenges",
       "description": "Complete your Monthly Challenges to earn big rewards.",
       "icon": Icons.event,
       "route": "/monthlyChallenges",
+      "challenges": [
+        "Reduce water usage by 10%",
+        "Volunteer for an environmental cause",
+        "Use no single-use plastics for a week"
+      ]
     },
     {
       "title": "One-time Challenges",
       "description": "Complete your One-time Challenge to get large points.",
       "icon": Icons.verified,
       "route": "/oneTimeChallenges",
+      "challenges": [
+        "Plant a Tree Upload a photo of the tree you planted.",
+        "Donate old clothes",
+        "Switch to a sustainable brand"
+      ]
     }
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredChallenges = List.from(challengeTypes);
+    _searchController.addListener(_filterChallenges);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterChallenges() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredChallenges = challengeTypes.where((category) {
+        bool matchesCategory =
+            category["title"].toLowerCase().contains(query) ||
+                category["description"].toLowerCase().contains(query);
+
+        bool matchesChallenges = (category["challenges"] as List<String>)
+            .any((challenge) => challenge.toLowerCase().contains(query));
+
+        return matchesCategory || matchesChallenges;
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,16 +101,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           ),
         ),
         backgroundColor: Colors.green,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Menu button clicked")),
-              );
-            },
-          ),
-        ],
+        actions: [],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -75,8 +116,9 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
               ),
               child: TextField(
+                controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: "Search",
+                  hintText: "Search challenges...",
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: InputBorder.none,
                 ),
@@ -86,18 +128,20 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
             // Challenge Category Blocks
             Expanded(
-              child: ListView.builder(
-                itemCount: challengeTypes.length,
-                itemBuilder: (context, index) {
-                  final challenge = challengeTypes[index];
-                  return _buildChallengeCategory(
-                    title: challenge["title"],
-                    description: challenge["description"],
-                    icon: challenge["icon"],
-                    route: challenge["route"],
-                  );
-                },
-              ),
+              child: _filteredChallenges.isEmpty
+                  ? const Center(child: Text("No matching challenges found."))
+                  : ListView.builder(
+                      itemCount: _filteredChallenges.length,
+                      itemBuilder: (context, index) {
+                        final category = _filteredChallenges[index];
+                        return _buildChallengeCategory(
+                          title: category["title"],
+                          description: category["description"],
+                          icon: category["icon"],
+                          route: category["route"],
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -153,7 +197,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 child: Icon(icon, color: Colors.green, size: 30),
               ),
               const SizedBox(width: 16),
-              // Texts
+              // Category Title
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

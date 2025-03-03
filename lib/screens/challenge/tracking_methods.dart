@@ -120,58 +120,59 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   }
 
   Future<void> _handlePhotoUpload() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+  final picker = ImagePicker();
+  final pickedFile = await picker.pickImage(source: ImageSource.camera);
 
-    if (pickedFile == null) {
-      debugPrint("❌ No image selected");
-      return;
-    }
-
-    File imageFile = File(pickedFile.path);
-
-    // Generate a unique file name
-    String fileName =
-        "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
-    FirebaseStorage storage = FirebaseStorage.instance;
-    Reference storageRef = storage.ref().child(fileName);
-
-    try {
-      // Upload image to Firebase Storage
-      UploadTask uploadTask = storageRef.putFile(imageFile);
-      TaskSnapshot snapshot = await uploadTask;
-
-      // Get the image URL
-      String imageUrl = await snapshot.ref.getDownloadURL();
-
-      // Update Firestore with image URL
-      await _firestore
-          .collection('user_challenges')
-          .doc("${_user!.uid}_${widget.challengeID}")
-          .set({
-        'photoUrl': imageUrl, // Store URL in Firestore
-        'status': 'completed',
-        'progress': widget.requiredProgress,
-        'lastUpdated': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // Update state
-      setState(() {
-        _image = imageFile;
-      });
-
-      debugPrint("✅ Image uploaded successfully: $imageUrl");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("✅ Photo uploaded and challenge completed!")),
-      );
-    } catch (e) {
-      debugPrint("❌ Image upload failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Upload failed: $e")),
-      );
-    }
+  if (pickedFile == null) {
+    debugPrint("❌ No image selected");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("❌ No image selected")),
+    );
+    return;
   }
+
+  File imageFile = File(pickedFile.path);
+  String fileName =
+      "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
+  FirebaseStorage storage = FirebaseStorage.instance;
+  Reference storageRef = storage.ref().child(fileName);
+
+  try {
+    // ✅ Upload image to Firebase Storage
+    UploadTask uploadTask = storageRef.putFile(imageFile);
+    TaskSnapshot snapshot = await uploadTask;
+
+    // ✅ Get the image URL
+    String imageUrl = await snapshot.ref.getDownloadURL();
+
+    // ✅ Update Firestore with image URL
+    await _firestore
+        .collection('user_challenges')
+        .doc("${_user!.uid}_${widget.challengeID}")
+        .set({
+      'photoUrl': imageUrl, // Store URL in Firestore
+      'status': 'completed',
+      'progress': widget.requiredProgress,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // ✅ Update UI state
+    setState(() {
+      _image = imageFile;
+    });
+
+    debugPrint("✅ Image uploaded successfully: $imageUrl");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("✅ Photo uploaded and challenge completed!")),
+    );
+  } catch (e) {
+    debugPrint("❌ Image upload failed: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("❌ Upload failed: $e")),
+    );
+  }
+}
+
 
 /*
   Future<void> _handleQRScan() async {
