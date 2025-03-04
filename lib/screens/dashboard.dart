@@ -194,30 +194,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    "Leaderboard",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView( // ✅ Added to prevent overflow
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Leaderboard",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  Spacer(),
-                                  Icon(Icons.star, color: Colors.amber),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _leaderboardEntry(
-                                  "1. Nia Zhang", 4500, Colors.amber),
-                              _leaderboardEntry(
-                                  "2. John Cena", 3800, Colors.grey),
-                              _leaderboardEntry(
-                                  "3. Zack Ryder", 3700, Colors.brown),
-                            ],
+                                    Spacer(),
+                                    Icon(Icons.star, color: Colors.amber),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                _leaderboardEntry("1. Nia Zhang", 4500, Colors.amber),
+                                _leaderboardEntry("2. John Cena", 3800, Colors.grey),
+                                _leaderboardEntry("3. Zack Ryder", 3700, Colors.brown),
+                              ],
+                            ),
                           ),
                         ),
                       ),
