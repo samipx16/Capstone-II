@@ -28,7 +28,13 @@ class _OneTimeChallengesScreenState extends State<OneTimeChallengesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("One-Time Challenges"),
+          title: const Text(
+            "One-Time Challenges",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           backgroundColor: Colors.green),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore

@@ -21,13 +21,68 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
   void initState() {
     super.initState();
     _user = _auth.currentUser;
+    _checkForDailyReset();
+  }
+
+  /// Checks if it's a new day and resets daily challenges
+  void _checkForDailyReset() async {
+    if (_user == null) return;
+
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(_user!.uid).get();
+    Timestamp? lastReset = userDoc.exists ? userDoc['lastReset'] : null;
+
+    DateTime now = DateTime.now();
+    DateTime lastResetDate = lastReset?.toDate() ?? DateTime(2000);
+
+    bool isNewDay = now.year > lastResetDate.year ||
+        now.month > lastResetDate.month ||
+        now.day > lastResetDate.day;
+
+    if (isNewDay) {
+      await _resetDailyChallenges();
+    }
+  }
+
+  /// Resets all daily challenges for the user
+  Future<void> _resetDailyChallenges() async {
+    if (_user == null) return;
+
+    WriteBatch batch = _firestore.batch();
+
+    QuerySnapshot userChallengesSnapshot = await _firestore
+        .collection('user_challenges')
+        .where('userID', isEqualTo: _user!.uid)
+        .where('frequency', isEqualTo: 'daily')
+        .get();
+
+    for (var doc in userChallengesSnapshot.docs) {
+      batch.update(doc.reference, {
+        'progress': 0,
+        'status': 'not_started',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    }
+
+    batch.update(_firestore.collection('users').doc(_user!.uid), {
+      'lastReset': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Daily Challenges"), backgroundColor: Colors.green),
+          title: const Text(
+            "Daily Challenges",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.green),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('challenges')
@@ -59,26 +114,6 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                     var userChallengeData = userChallengeSnapshot.data!.data()
                         as Map<String, dynamic>;
                     status = userChallengeData['status'] ?? "not_started";
-                    Timestamp? lastUpdated = userChallengeData['lastUpdated'];
-
-                    DateTime today = DateTime.now();
-                    DateTime lastUpdateDate =
-                        lastUpdated?.toDate() ?? DateTime(2000);
-
-                    bool isSameDay = today.year == lastUpdateDate.year &&
-                        today.month == lastUpdateDate.month &&
-                        today.day == lastUpdateDate.day;
-
-                    if (!isSameDay && status != 'completed') {
-                      _firestore
-                          .collection('user_challenges')
-                          .doc("${_user!.uid}_${challenge.id}")
-                          .set({
-                        'progress': 0,
-                        'status': 'not_started',
-                        'lastUpdated': FieldValue.serverTimestamp(),
-                      }, SetOptions(merge: true));
-                    }
 
                     isCompleted = status == 'completed';
                   }

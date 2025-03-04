@@ -98,7 +98,14 @@ class _MilestonesPageState extends State<MilestonesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Your Milestones"), backgroundColor: Colors.green),
+          title: const Text(
+            "Your Milestones",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.green),
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestore.collection('user_milestones').doc(uid).snapshots(),
         builder: (context, snapshot) {
