@@ -29,83 +29,22 @@ class _MilestonesPageState extends State<MilestonesPage> {
       setState(() {
         uid = user.uid;
       });
-
-      await _initializeUserMilestones();
-      _listenToChallengeUpdates();
     }
-  }
-
-  Future<void> _initializeUserMilestones() async {
-    DocumentReference userMilestonesRef =
-        _firestore.collection('user_milestones').doc(uid);
-    DocumentSnapshot snapshot = await userMilestonesRef.get();
-
-    if (!snapshot.exists) {
-      await userMilestonesRef.set({
-        "milestone_1": {"title": "Scrappy Recycler", "goal": 50, "progress": 0},
-        "milestone_2": {
-          "title": "Mean Green Warrior",
-          "goal": 7,
-          "progress": 0
-        },
-        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0},
-        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0},
-        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0},
-        "milestone_6": {
-          "title": "Ultimate Mean Green Hero",
-          "goal": 5,
-          "progress": 0
-        },
-      });
-    }
-  }
-
-  void _listenToChallengeUpdates() {
-    _firestore
-        .collection('user_challenges')
-        .doc(uid)
-        .snapshots()
-        .listen((snapshot) {
-      if (snapshot.exists) {
-        _syncMilestonesWithChallenges(snapshot.data() as Map<String, dynamic>);
-      }
-    });
-  }
-
-  Future<void> _syncMilestonesWithChallenges(
-      Map<String, dynamic> userChallenges) async {
-    DocumentReference userMilestonesRef =
-        _firestore.collection('user_milestones').doc(uid);
-    Map<String, dynamic> milestoneUpdates = {};
-
-    if (userChallenges.containsKey('recycle_5')) {
-      milestoneUpdates['milestone_1.progress'] =
-          (userChallenges['recycle_5']['count'] * 5).clamp(0, 50);
-    }
-    if (userChallenges.containsKey('go_plastic_free')) {
-      milestoneUpdates['milestone_2.progress'] =
-          userChallenges['go_plastic_free']['count'].clamp(0, 7);
-    }
-    if (userChallenges.containsKey('walk_to_class')) {
-      milestoneUpdates['milestone_3.progress'] =
-          userChallenges['walk_to_class']['count'].clamp(0, 10);
-    }
-
-    await userMilestonesRef.update(milestoneUpdates);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text(
-            "Your Milestones",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+        title: const Text(
+          "Your Milestones",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-          backgroundColor: Colors.green),
+        ),
+        backgroundColor: Colors.green,
+      ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: _firestore.collection('user_milestones').doc(uid).snapshots(),
         builder: (context, snapshot) {
@@ -117,7 +56,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
           }
 
           Map<String, dynamic> milestones =
-              snapshot.data!.data() as Map<String, dynamic>;
+          snapshot.data!.data() as Map<String, dynamic>;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -141,7 +80,6 @@ class _MilestonesPageState extends State<MilestonesPage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // Bottom Navigation Bar (Copied from Challenges Page)
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
@@ -157,32 +95,29 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, String key) {
     double progressPercent =
-        (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
-    String badgePath = 'assets/$key.png'; // Path based on milestone key
-
-    print("📸 Loading local badge: $badgePath"); // Debugging
+    (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
+    String badgePath = 'assets/$key.png';
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Load Badge Image from Local Assets
+            // Larger Badge Image
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 badgePath,
-                width: 60,
-                height: 60,
+                width: 80, // Increased size
+                height: 80, // Increased size
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  print("❌ Error loading image: $badgePath");
                   return const Icon(Icons.image_not_supported,
-                      size: 60, color: Colors.grey);
+                      size: 80, color: Colors.grey);
                 },
               ),
             ),
@@ -197,20 +132,43 @@ class _MilestonesPageState extends State<MilestonesPage> {
                   Text(
                     milestone['title'],
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                      fontSize: 20, // Bigger font
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 5),
-                  LinearProgressIndicator(
-                    value: progressPercent,
-                    backgroundColor: Colors.grey[300],
-                    color: Colors.green,
-                    minHeight: 8,
+
+                  const SizedBox(height: 4),
+
+                  // Short Description (Lower Opacity)
+                  Text(
+                    _getMilestoneDescription(milestone['title']),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black.withOpacity(0.6),
+                    ),
                   ),
-                  const SizedBox(height: 5),
+
+                  const SizedBox(height: 8),
+
+                  // Thicker Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: progressPercent,
+                      backgroundColor: Colors.grey[300],
+                      color: Colors.green,
+                      minHeight: 12, // Increased thickness
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
                   Text(
                     "${milestone['progress']} / ${milestone['goal']} completed",
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -221,32 +179,24 @@ class _MilestonesPageState extends State<MilestonesPage> {
     );
   }
 
-  Widget _buildBottomNavItem({
-    required int index,
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    bool isActive = _currentIndex == index;
-    return MaterialButton(
-      onPressed: () {
-        setState(() {
-          _currentIndex = index;
-        });
-        if (route.isNotEmpty) {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      minWidth: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: isActive ? Colors.green : Colors.grey),
-          Text(label,
-              style: TextStyle(
-                  color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
-        ],
-      ),
-    );
+  // Function to get milestone descriptions
+  String _getMilestoneDescription(String title) {
+    switch (title) {
+      case "Scrappy Recycler":
+        return "Recycle 50 items to earn this badge!";
+      case "Mean Green Warrior":
+        return "Avoid plastic for a week!";
+      case "Lucky Commuter":
+        return "Walk or bike to class 10 times!";
+      case "Hydration Hawk":
+        return "Use refill stations 20 times!";
+      case "Eco Eagle":
+        return "Reduce food waste 10 times!";
+      case "Ultimate Mean Green Hero":
+        return "Complete all milestones!";
+      default:
+        return "Complete challenges to unlock!";
+    }
   }
 }
+
