@@ -22,6 +22,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
     _fetchUserAndInitialize();
   }
 
+  /// Fetches the current user and initializes their milestones if not present.
   void _fetchUserAndInitialize() async {
     User? user = _auth.currentUser;
 
@@ -29,6 +30,55 @@ class _MilestonesPageState extends State<MilestonesPage> {
       setState(() {
         uid = user.uid;
       });
+
+      // Ensure milestones are initialized for the new user
+      await _initializeUserMilestones();
+    }
+  }
+
+  /// Ensures that the new user has a milestone document in Firestore.
+  Future<void> _initializeUserMilestones() async {
+    DocumentReference userMilestonesRef =
+    _firestore.collection('user_milestones').doc(uid);
+    DocumentSnapshot snapshot = await userMilestonesRef.get();
+
+    if (!snapshot.exists || snapshot.data() == null) {
+      print("Initializing milestones for new user: $uid");
+
+      await userMilestonesRef.set({
+        "milestone_1": {
+          "title": "Scrappy Recycler",
+          "goal": 50,
+          "progress": 0
+        },
+        "milestone_2": {
+          "title": "Mean Green Warrior",
+          "goal": 7,
+          "progress": 0
+        },
+        "milestone_3": {
+          "title": "Lucky Commuter",
+          "goal": 10,
+          "progress": 0
+        },
+        "milestone_4": {
+          "title": "Hydration Hawk",
+          "goal": 20,
+          "progress": 0
+        },
+        "milestone_5": {
+          "title": "Eco Eagle",
+          "goal": 10,
+          "progress": 0
+        },
+        "milestone_6": {
+          "title": "Ultimate Mean Green Hero",
+          "goal": 5,
+          "progress": 0
+        },
+      });
+    } else {
+      print("Milestones already exist for user.");
     }
   }
 
@@ -52,19 +102,24 @@ class _MilestonesPageState extends State<MilestonesPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("No milestones found."));
+            return const Center(child: Text("Loading milestones..."));
           }
 
-          Map<String, dynamic> milestones =
-          snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic>? milestones =
+          snapshot.data!.data() as Map<String, dynamic>?;
+
+          if (milestones == null || milestones.isEmpty) {
+            return const Center(
+                child: Text(
+                  "No milestones available. Please try again later.",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ));
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),
             children: milestones.entries.map((entry) {
-              String key = entry.key;
-              Map<String, dynamic> data = entry.value;
-
-              return _buildMilestoneCard(data, key);
+              return _buildMilestoneCard(entry.value, entry.key);
             }).toList(),
           );
         },
@@ -93,6 +148,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
+  /// Builds each milestone card with improved layout, bigger images, and descriptions.
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, String key) {
     double progressPercent =
     (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
@@ -112,8 +168,8 @@ class _MilestonesPageState extends State<MilestonesPage> {
               borderRadius: BorderRadius.circular(12),
               child: Image.asset(
                 badgePath,
-                width: 80, // Increased size
-                height: 80, // Increased size
+                width: 80, // Bigger badge
+                height: 80,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(Icons.image_not_supported,
@@ -179,7 +235,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
     );
   }
 
-  // Function to get milestone descriptions
+  /// Provides descriptions for each milestone
   String _getMilestoneDescription(String title) {
     switch (title) {
       case "Scrappy Recycler":
@@ -199,4 +255,3 @@ class _MilestonesPageState extends State<MilestonesPage> {
     }
   }
 }
-
