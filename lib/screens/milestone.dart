@@ -33,8 +33,110 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
       // Ensure milestones are initialized for the new user
       await _initializeUserMilestones();
+
+      // Start listening for challenge updates
+      _listenToChallengeUpdates();
+
+      // Rescan challenges and sync milestones when the user logs in
+      await rescanChallengesAndSyncMilestones();
     }
   }
+
+  void _listenToChallengeUpdates() {
+    // Listen to all documents in the user_challenges collection that belong to the current user
+    _firestore
+        .collection('user_challenges')
+        .where('userID', isEqualTo: uid) // Filter by the current user
+        .snapshots()
+        .listen((querySnapshot) {
+      print("🔥 Firestore detected challenge updates for user: $uid");
+
+      // Process each updated challenge document
+      for (var doc in querySnapshot.docs) {
+        Map<String, dynamic> userChallenges = doc.data() as Map<String, dynamic>;
+        print("📌 Updated userChallenges: $userChallenges");
+
+        // Sync milestones with the updated challenges
+        _syncMilestonesWithChallenges(userChallenges);
+      }
+    });
+  }
+
+
+  Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
+    DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
+    Map<String, dynamic> milestoneUpdates = {};
+
+    // Check if 'Go Plastic-Free' challenge is completed and update milestone progress
+    if (userChallenges['challengeID'] == 'go_plastic_free') {
+      int challengeCount = userChallenges['progress'] ?? 0;
+
+      // Update "Mean Green Warrior" progress based on this challenge
+      milestoneUpdates['milestone_2.progress'] = challengeCount.clamp(0, 7);
+    }
+
+    // Check if 'Recycle 5 Items' challenge is completed and update milestone progress
+    if (userChallenges['challengeID'] == 'recycle_5') {
+      int recycleCount = userChallenges['progress'] ?? 0;
+      milestoneUpdates['milestone_1.progress'] = (recycleCount * 5).clamp(0, 50);
+    }
+
+    // Only update Firestore if there's a change
+    if (milestoneUpdates.isNotEmpty) {
+      await userMilestonesRef.update(milestoneUpdates);
+      print("🚀 Updated milestones: $milestoneUpdates");
+    } else {
+      print("✅ No milestone updates needed.");
+    }
+  }
+
+  Future<void> rescanChallengesAndSyncMilestones() async {
+    DocumentSnapshot challengeSnapshot =
+    await _firestore.collection('user_challenges').doc(uid).get();
+    DocumentSnapshot milestoneSnapshot =
+    await _firestore.collection('user_milestones').doc(uid).get();
+
+    if (!challengeSnapshot.exists || !milestoneSnapshot.exists) {
+      print("⚠️ No existing challenge or milestone data found.");
+      return;
+    }
+
+    Map<String, dynamic> userChallenges =
+    challengeSnapshot.data() as Map<String, dynamic>;
+    Map<String, dynamic> userMilestones =
+    milestoneSnapshot.data() as Map<String, dynamic>;
+    Map<String, dynamic> milestoneUpdates = {};
+
+    // 🔥 Rescan "Go Plastic-Free" Challenge and Sync it with "Mean Green Warrior"
+    if (userChallenges.containsKey('go_plastic_free')) {
+      int challengeProgress = userChallenges['go_plastic_free']?['progress'] ?? 0;
+      int currentMilestoneProgress = userMilestones['milestone_2']?['progress'] ?? 0;
+
+      if (challengeProgress > currentMilestoneProgress) {
+        print("🔄 Resyncing 'Mean Green Warrior' milestone progress.");
+        milestoneUpdates['milestone_2.progress'] = challengeProgress.clamp(0, 7);
+      }
+    }
+
+    // 🔥 Rescan "Recycle 5 Items" Challenge and Sync with "Scrappy Recycler"
+    if (userChallenges.containsKey('recycle_5')) {
+      int recycleProgress = (userChallenges['recycle_5']?['progress'] ?? 0) * 5;
+      int currentMilestoneProgress = userMilestones['milestone_1']?['progress'] ?? 0;
+
+      if (recycleProgress > currentMilestoneProgress) {
+        print("🔄 Resyncing 'Scrappy Recycler' milestone progress.");
+        milestoneUpdates['milestone_1.progress'] = recycleProgress.clamp(0, 50);
+      }
+    }
+
+    if (milestoneUpdates.isNotEmpty) {
+      print("🚀 Resyncing milestones with Firestore: $milestoneUpdates");
+      await _firestore.collection('user_milestones').doc(uid).update(milestoneUpdates);
+    } else {
+      print("✅ Milestones are already up to date.");
+    }
+  }
+
 
   /// Ensures that the new user has a milestone document in Firestore.
   Future<void> _initializeUserMilestones() async {
