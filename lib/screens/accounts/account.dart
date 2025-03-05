@@ -69,53 +69,36 @@ class _AccountPageState extends State<AccountPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Profile Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade800, Colors.green.shade400],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.green.shade200,
+                    backgroundImage: _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
+                    child: _photoURL.isEmpty
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.shade400,
-                        blurRadius: 6,
-                        offset: Offset(0, 4)),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.green.shade200,
-                      backgroundImage:
-                          _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
-                      child: _photoURL.isEmpty
-                          ? const Icon(Icons.person,
-                              size: 50, color: Colors.white)
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _displayName,
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-                    const SizedBox(height: 5),
-                    const Text("🏆 65 pts",
-                        style: TextStyle(fontSize: 16, color: Colors.white70)),
-                  ],
-                ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _displayName,
+                    style: const TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text("🏆 65 pts",
+                      style: TextStyle(fontSize: 20, color: Colors.black54)),
+                ],
               ),
+
               const SizedBox(height: 20),
 
               // Unified Main Container
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(44),
+                height: 540,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -129,7 +112,7 @@ class _AccountPageState extends State<AccountPage> {
                 child: Column(
                   children: [
                     _buildButton(Icons.campaign, "Challenges", '/challenges',
-                        Colors.green.shade700),
+                        Colors.green.shade700 ),
                     const SizedBox(height: 10),
                     _buildButton(Icons.emoji_events, "Milestones",
                         '/milestones', Colors.green.shade700),
@@ -138,6 +121,7 @@ class _AccountPageState extends State<AccountPage> {
                     // Sub-container for Settings, About, Privacy, Logout
                     Container(
                       padding: const EdgeInsets.all(16),
+                      height: 300,
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         borderRadius: BorderRadius.circular(20),
@@ -149,7 +133,7 @@ class _AccountPageState extends State<AccountPage> {
                             .center, // Centers items within column
                         children: [
                           _buildSettingsOption("Settings",
-                              navigateToSettings: true),
+                              navigateToSettings: true, ),
                           _buildSettingsOption("About", navigateToAbout: true),
                           _buildSettingsOption("Privacy Policy"),
                           _buildSettingsOption("Logout", isLogout: true),
@@ -197,7 +181,7 @@ class _AccountPageState extends State<AccountPage> {
           backgroundColor: color,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          minimumSize: const Size(double.infinity, 45),
+          minimumSize: const Size(double.infinity, 50),
         ),
         onPressed: () {
           Navigator.pushNamed(context, route);
@@ -208,7 +192,7 @@ class _AccountPageState extends State<AccountPage> {
             Icon(icon, color: Colors.white),
             const SizedBox(width: 10),
             Text(label,
-                style: const TextStyle(fontSize: 16, color: Colors.white)),
+                style: const TextStyle(fontSize: 18, color: Colors.white)),
           ],
         ),
       ),
@@ -227,7 +211,7 @@ class _AccountPageState extends State<AccountPage> {
           textAlign:
               TextAlign.center, // Ensures text is centered inside ListTile
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w500,
             color: isLogout ? Colors.red : Colors.black87,
           ),
