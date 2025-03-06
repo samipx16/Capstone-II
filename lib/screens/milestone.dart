@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import './widgets/bottom_navbar.dart';
 import './widgets/milestone_popup.dart';
 
-
 class MilestonesPage extends StatefulWidget {
   const MilestonesPage({super.key});
 
@@ -55,7 +54,8 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
       // Process each updated challenge document
       for (var doc in querySnapshot.docs) {
-        Map<String, dynamic> userChallenges = doc.data() as Map<String, dynamic>;
+        Map<String, dynamic> userChallenges =
+            doc.data() as Map<String, dynamic>;
         print("📌 Updated userChallenges: $userChallenges");
 
         // Sync milestones with the updated challenges
@@ -64,44 +64,55 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
-  Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
-    DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
+  Future<void> _syncMilestonesWithChallenges(
+      Map<String, dynamic> userChallenges) async {
+    DocumentReference userMilestonesRef =
+        _firestore.collection('user_milestones').doc(uid);
     Map<String, dynamic> milestoneUpdates = {};
     List<Map<String, String>> completedMilestones = [];
+    final List<Map<String, dynamic>> challenges = [
+      {
+        'id': 'recycle_5',
+        'milestone': 'milestone_1',
+        'title': 'Scrappy Recycler',
+        'goal': 50
+      },
+      {
+        'id': 'go_plastic_free',
+        'milestone': 'milestone_2',
+        'title': 'Mean Green Warrior',
+        'goal': 7
+      },
+      {
+        'id': 'walk_to_class',
+        'milestone': 'milestone_3',
+        'title': 'Lucky Commuter',
+        'goal': 10
+      },
+      {
+        'id': 'refill_station',
+        'milestone': 'milestone_4',
+        'title': 'Hydration Hawk',
+        'goal': 20
+      },
+      {
+        'id': 'meatless_week',
+        'milestone': 'milestone_5',
+        'title': 'Eco Eagle',
+        'goal': 10
+      },
+    ];
 
-    // ♻️ Scrappy Recycler → Recycle 50 items
-    if (userChallenges['challengeID'] == 'recycle_5') {
-      int recycleCount = userChallenges['progress'] ?? 0;
-      if (recycleCount >= 50) completedMilestones.add({"id": "milestone_1", "title": "Scrappy Recycler"});
-      milestoneUpdates['milestone_1.progress'] = recycleCount.clamp(0, 50);
-    }
-
-    // 🚫 Mean Green Warrior → Avoid plastic for a week
-    if (userChallenges['challengeID'] == 'go_plastic_free') {
-      int challengeCount = userChallenges['progress'] ?? 0;
-      if (challengeCount >= 7) completedMilestones.add({"id": "milestone_2", "title": "Mean Green Warrior"});
-      milestoneUpdates['milestone_2.progress'] = challengeCount.clamp(0, 7);
-    }
-
-    // 🚶‍♂️ Lucky Commuter → Walk/Bike to class 10 times
-    if (userChallenges['challengeID'] == 'walk_to_class') {
-      int commuteCount = userChallenges['progress'] ?? 0;
-      if (commuteCount >= 10) completedMilestones.add({"id": "milestone_3", "title": "Lucky Commuter"});
-      milestoneUpdates['milestone_3.progress'] = commuteCount.clamp(0, 10);
-    }
-
-    // 💧 Hydration Hawk → Use refill stations 20 times
-    if (userChallenges['challengeID'] == 'refill_station') {
-      int refills = userChallenges['progress'] ?? 0;
-      if (refills >= 20) completedMilestones.add({"id": "milestone_4", "title": "Hydration Hawk"});
-      milestoneUpdates['milestone_4.progress'] = refills.clamp(0, 20);
-    }
-
-    // 🍽️ Eco Eagle → Reduce food waste 10 times
-    if (userChallenges['challengeID'] == 'meatless_week') {
-      int meatlessCount = userChallenges['progress'] ?? 0;
-      if (meatlessCount >= 10) completedMilestones.add({"id": "milestone_5", "title": "Eco Eagle"});
-      milestoneUpdates['milestone_5.progress'] = meatlessCount.clamp(0, 10);
+    for (var challenge in challenges) {
+      if (userChallenges['challengeID'] == challenge['id']) {
+        int progress = userChallenges['progress'] ?? 0;
+        if (progress >= challenge['goal']) {
+          completedMilestones
+              .add({'id': challenge['milestone'], 'title': challenge['title']});
+        }
+        milestoneUpdates['${challenge['milestone']}.progress'] =
+            progress.clamp(0, challenge['goal']);
+      }
     }
 
     // 🏆 Ultimate Mean Green Hero → Complete All Milestones
@@ -109,7 +120,8 @@ class _MilestonesPageState extends State<MilestonesPage> {
         milestoneUpdates.values.every((value) => value >= 1);
 
     if (allMilestonesCompleted) {
-      completedMilestones.add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
+      completedMilestones
+          .add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
       milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
     }
 
@@ -129,13 +141,11 @@ class _MilestonesPageState extends State<MilestonesPage> {
     }
   }
 
-
-
   Future<void> rescanChallengesAndSyncMilestones() async {
     DocumentSnapshot challengeSnapshot =
-    await _firestore.collection('user_challenges').doc(uid).get();
+        await _firestore.collection('user_challenges').doc(uid).get();
     DocumentSnapshot milestoneSnapshot =
-    await _firestore.collection('user_milestones').doc(uid).get();
+        await _firestore.collection('user_milestones').doc(uid).get();
 
     if (!challengeSnapshot.exists || !milestoneSnapshot.exists) {
       print("⚠️ No existing challenge or milestone data found.");
@@ -143,26 +153,30 @@ class _MilestonesPageState extends State<MilestonesPage> {
     }
 
     Map<String, dynamic> userChallenges =
-    challengeSnapshot.data() as Map<String, dynamic>;
+        challengeSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> userMilestones =
-    milestoneSnapshot.data() as Map<String, dynamic>;
+        milestoneSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> milestoneUpdates = {};
 
     // 🔥 Rescan "Go Plastic-Free" Challenge and Sync it with "Mean Green Warrior"
     if (userChallenges.containsKey('go_plastic_free')) {
-      int challengeProgress = userChallenges['go_plastic_free']?['progress'] ?? 0;
-      int currentMilestoneProgress = userMilestones['milestone_2']?['progress'] ?? 0;
+      int challengeProgress =
+          userChallenges['go_plastic_free']?['progress'] ?? 0;
+      int currentMilestoneProgress =
+          userMilestones['milestone_2']?['progress'] ?? 0;
 
       if (challengeProgress > currentMilestoneProgress) {
         print("🔄 Resyncing 'Mean Green Warrior' milestone progress.");
-        milestoneUpdates['milestone_2.progress'] = challengeProgress.clamp(0, 7);
+        milestoneUpdates['milestone_2.progress'] =
+            challengeProgress.clamp(0, 7);
       }
     }
 
     // 🔥 Rescan "Recycle 5 Items" Challenge and Sync with "Scrappy Recycler"
     if (userChallenges.containsKey('recycle_5')) {
       int recycleProgress = (userChallenges['recycle_5']?['progress'] ?? 0) * 5;
-      int currentMilestoneProgress = userMilestones['milestone_1']?['progress'] ?? 0;
+      int currentMilestoneProgress =
+          userMilestones['milestone_1']?['progress'] ?? 0;
 
       if (recycleProgress > currentMilestoneProgress) {
         print("🔄 Resyncing 'Scrappy Recycler' milestone progress.");
@@ -172,48 +186,34 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
     if (milestoneUpdates.isNotEmpty) {
       print("🚀 Resyncing milestones with Firestore: $milestoneUpdates");
-      await _firestore.collection('user_milestones').doc(uid).update(milestoneUpdates);
+      await _firestore
+          .collection('user_milestones')
+          .doc(uid)
+          .update(milestoneUpdates);
     } else {
       print("✅ Milestones are already up to date.");
     }
   }
 
-
   /// Ensures that the new user has a milestone document in Firestore.
   Future<void> _initializeUserMilestones() async {
     DocumentReference userMilestonesRef =
-    _firestore.collection('user_milestones').doc(uid);
+        _firestore.collection('user_milestones').doc(uid);
     DocumentSnapshot snapshot = await userMilestonesRef.get();
 
     if (!snapshot.exists || snapshot.data() == null) {
       print("Initializing milestones for new user: $uid");
 
       await userMilestonesRef.set({
-        "milestone_1": {
-          "title": "Scrappy Recycler",
-          "goal": 50,
-          "progress": 0
-        },
+        "milestone_1": {"title": "Scrappy Recycler", "goal": 50, "progress": 0},
         "milestone_2": {
           "title": "Mean Green Warrior",
           "goal": 7,
           "progress": 0
         },
-        "milestone_3": {
-          "title": "Lucky Commuter",
-          "goal": 10,
-          "progress": 0
-        },
-        "milestone_4": {
-          "title": "Hydration Hawk",
-          "goal": 20,
-          "progress": 0
-        },
-        "milestone_5": {
-          "title": "Eco Eagle",
-          "goal": 10,
-          "progress": 0
-        },
+        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0},
+        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0},
+        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0},
         "milestone_6": {
           "title": "Ultimate Mean Green Hero",
           "goal": 5,
@@ -249,14 +249,14 @@ class _MilestonesPageState extends State<MilestonesPage> {
           }
 
           Map<String, dynamic>? milestones =
-          snapshot.data!.data() as Map<String, dynamic>?;
+              snapshot.data!.data() as Map<String, dynamic>?;
 
           if (milestones == null || milestones.isEmpty) {
             return const Center(
                 child: Text(
-                  "No milestones available. Please try again later.",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ));
+              "No milestones available. Please try again later.",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ));
           }
 
           return ListView(
@@ -267,7 +267,6 @@ class _MilestonesPageState extends State<MilestonesPage> {
           );
         },
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () {
@@ -277,7 +276,6 @@ class _MilestonesPageState extends State<MilestonesPage> {
         child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
@@ -294,7 +292,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
   /// Builds each milestone card with improved layout, bigger images, and descriptions.
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, String key) {
     double progressPercent =
-    (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
+        (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
     String badgePath = 'assets/$key.png';
 
     return Card(
