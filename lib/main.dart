@@ -39,7 +39,7 @@ class EcoEagleApp extends StatelessWidget {
         '/oneTimeChallenges': (context) => const OneTimeChallengesScreen(),
         '/milestones': (context) => MilestonesPage(),
         '/accounts': (context) => AccountPage(),
-        '/leaderboard': (context) => LeaderboardPage(),
+        '/leaderboard': (context) => LeaderboardPage(), //Basic
 
       },
     );
