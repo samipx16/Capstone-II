@@ -64,82 +64,89 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
-  Future<void> _syncMilestonesWithChallenges(
-      Map<String, dynamic> userChallenges) async {
-    DocumentReference userMilestonesRef =
-        _firestore.collection('user_milestones').doc(uid);
-    Map<String, dynamic> milestoneUpdates = {};
-    List<Map<String, String>> completedMilestones = [];
-    final List<Map<String, dynamic>> challenges = [
-      {
-        'id': 'recycle_5',
-        'milestone': 'milestone_1',
-        'title': 'Scrappy Recycler',
-        'goal': 50
-      },
-      {
-        'id': 'go_plastic_free',
-        'milestone': 'milestone_2',
-        'title': 'Mean Green Warrior',
-        'goal': 7
-      },
-      {
-        'id': 'walk_to_class',
-        'milestone': 'milestone_3',
-        'title': 'Lucky Commuter',
-        'goal': 10
-      },
-      {
-        'id': 'refill_station',
-        'milestone': 'milestone_4',
-        'title': 'Hydration Hawk',
-        'goal': 20
-      },
-      {
-        'id': 'meatless_week',
-        'milestone': 'milestone_5',
-        'title': 'Eco Eagle',
-        'goal': 10
-      },
-    ];
+ Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
+  DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
+  Map<String, dynamic> milestoneUpdates = {};
+  List<Map<String, String>> completedMilestones = [];
 
-    for (var challenge in challenges) {
-      if (userChallenges['challengeID'] == challenge['id']) {
-        int progress = userChallenges['progress'] ?? 0;
-        if (progress >= challenge['goal']) {
-          completedMilestones
-              .add({'id': challenge['milestone'], 'title': challenge['title']});
-        }
-        milestoneUpdates['${challenge['milestone']}.progress'] =
-            progress.clamp(0, challenge['goal']);
+  // Fetch the current milestone data
+  DocumentSnapshot milestoneSnapshot = await userMilestonesRef.get();
+  Map<String, dynamic> currentMilestones = milestoneSnapshot.data() as Map<String, dynamic>;
+
+  final List<Map<String, dynamic>> challenges = [
+    {
+      'id': 'recycle_5',
+      'milestone': 'milestone_1',
+      'title': 'Scrappy Recycler',
+      'goal': 50
+    },
+    {
+      'id': 'go_plastic_free',
+      'milestone': 'milestone_2',
+      'title': 'Mean Green Warrior',
+      'goal': 7
+    },
+    {
+      'id': 'walk_to_class',
+      'milestone': 'milestone_3',
+      'title': 'Lucky Commuter',
+      'goal': 10
+    },
+    {
+      'id': 'refill_station',
+      'milestone': 'milestone_4',
+      'title': 'Hydration Hawk',
+      'goal': 20
+    },
+    {
+      'id': 'meatless_week',
+      'milestone': 'milestone_5',
+      'title': 'Eco Eagle',
+      'goal': 10
+    },
+  ];
+
+  for (var challenge in challenges) {
+    if (userChallenges['challengeID'] == challenge['id']) {
+      int progress = userChallenges['progress'] ?? 0;
+      bool isCompleted = progress >= challenge['goal'];
+
+      // Check if the milestone is completed for the first time
+      if (isCompleted && currentMilestones[challenge['milestone']]['completed'] != true) {
+        completedMilestones.add({'id': challenge['milestone'], 'title': challenge['title']});
       }
-    }
 
-    // 🏆 Ultimate Mean Green Hero → Complete All Milestones
-    bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
-        milestoneUpdates.values.every((value) => value >= 1);
-
-    if (allMilestonesCompleted) {
-      completedMilestones
-          .add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
-      milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
-    }
-
-    // 🚀 Update Firestore if any milestone progress changed
-    if (milestoneUpdates.isNotEmpty) {
-      await userMilestonesRef.update(milestoneUpdates);
-      print("🚀 Updated milestones: $milestoneUpdates");
-    }
-
-    // 🎉 Show animation if any new milestone is completed
-    if (completedMilestones.isNotEmpty) {
-      for (var milestone in completedMilestones) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          MilestonePopup.show(context, milestone["id"]!, milestone["title"]!);
-        });
-      }
+      // Update progress and completed status
+      milestoneUpdates['${challenge['milestone']}.progress'] = progress.clamp(0, challenge['goal']);
+      milestoneUpdates['${challenge['milestone']}.completed'] = isCompleted;
     }
   }
+
+  // 🏆 Ultimate Mean Green Hero → Complete All Milestones
+  bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
+      milestoneUpdates.values.every((value) => value >= 1);
+
+  if (allMilestonesCompleted && currentMilestones['milestone_6']['completed'] != true) {
+    completedMilestones.add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
+    milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
+    milestoneUpdates['milestone_6.completed'] = true;
+  }
+
+  // 🚀 Update Firestore if any milestone progress changed
+  if (milestoneUpdates.isNotEmpty) {
+    await userMilestonesRef.update(milestoneUpdates);
+    print("🚀 Updated milestones: $milestoneUpdates");
+  }
+
+  // 🎉 Show animation if any new milestone is completed
+  if (completedMilestones.isNotEmpty) {
+    for (var milestone in completedMilestones) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        MilestonePopup.show(context, milestone["id"]!, milestone["title"]!);
+      });
+    }
+  }
+}
 
   Future<void> rescanChallengesAndSyncMilestones() async {
     DocumentSnapshot challengeSnapshot =
@@ -209,15 +216,17 @@ class _MilestonesPageState extends State<MilestonesPage> {
         "milestone_2": {
           "title": "Mean Green Warrior",
           "goal": 7,
-          "progress": 0
+          "progress": 0,
+          "completed": false
         },
-        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0},
-        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0},
-        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0},
+        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0, "completed": false},
+        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0, "completed": false},
+        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0, "completed": false},
         "milestone_6": {
           "title": "Ultimate Mean Green Hero",
           "goal": 5,
-          "progress": 0
+          "progress": 0,
+          "completed": false
         },
       });
     } else {
