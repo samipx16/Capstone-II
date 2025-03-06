@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'SettingsPage.dart'; // Import the SettingsPage
+import 'SettingsPage.dart';
 import 'about.dart';
 import '../widgets/bottom_navbar.dart';
+import 'UserSupport.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -33,8 +34,7 @@ class _AccountPageState extends State<AccountPage> {
         _user = user;
       });
 
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(user.uid).get();
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         setState(() {
           _displayName = userDoc['name'] ?? "User";
@@ -68,8 +68,6 @@ class _AccountPageState extends State<AccountPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Profile Section
-
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -92,13 +90,11 @@ class _AccountPageState extends State<AccountPage> {
                       style: TextStyle(fontSize: 20, color: Colors.black54)),
                 ],
               ),
-
               const SizedBox(height: 20),
 
-              // Unified Main Container
+              // Main Account Section
               Container(
-                padding: const EdgeInsets.all(44),
-                height: 540,
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -106,37 +102,31 @@ class _AccountPageState extends State<AccountPage> {
                     BoxShadow(
                         color: Colors.grey.shade300,
                         blurRadius: 6,
-                        offset: Offset(0, 4)),
+                        offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Column(
                   children: [
-                    _buildButton(Icons.campaign, "Challenges", '/challenges',
-                        Colors.green.shade700 ),
+                    _buildButton(Icons.campaign, "Challenges", '/challenges', Colors.green.shade700),
                     const SizedBox(height: 10),
-                    _buildButton(Icons.emoji_events, "Milestones",
-                        '/milestones', Colors.green.shade700),
+                    _buildButton(Icons.emoji_events, "Milestones", '/milestones', Colors.green.shade700),
                     const SizedBox(height: 20),
 
-                    // Sub-container for Settings, About, Privacy, Logout
+                    // Settings Section
                     Container(
                       padding: const EdgeInsets.all(16),
-                      height: 300,
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .center, // Ensures content aligns to center
-                        mainAxisAlignment: MainAxisAlignment
-                            .center, // Centers items within column
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSettingsOption("Settings",
-                              navigateToSettings: true, ),
-                          _buildSettingsOption("About", navigateToAbout: true),
-                          _buildSettingsOption("Privacy Policy"),
-                          _buildSettingsOption("Logout", isLogout: true),
+                          _buildSettingsOption("Settings", Icons.settings, navigateToSettings: true),
+                          _buildSettingsOption("About", Icons.info, navigateToAbout: true),
+                          _buildSettingsOption("User Support", Icons.support_agent, navigateToSupport: true),
+                          _buildSettingsOption("Logout", Icons.logout, isLogout: true),
                         ],
                       ),
                     ),
@@ -179,8 +169,7 @@ class _AccountPageState extends State<AccountPage> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           minimumSize: const Size(double.infinity, 50),
         ),
         onPressed: () {
@@ -199,42 +188,45 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  Widget _buildSettingsOption(String label,
+  Widget _buildSettingsOption(String label, IconData icon,
       {bool isLogout = false,
-      bool navigateToSettings = false,
-      bool navigateToAbout = false}) {
-    return Center(
-      // Ensures horizontal centering
-      child: ListTile(
-        title: Text(
-          label,
-          textAlign:
-              TextAlign.center, // Ensures text is centered inside ListTile
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: isLogout ? Colors.red : Colors.black87,
-          ),
+        bool navigateToSettings = false,
+        bool navigateToAbout = false,
+        bool navigateToSupport = false}) {
+    return ListTile(
+      leading: Icon(icon, color: isLogout ? Colors.red : Colors.green.shade800),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+          color: isLogout ? Colors.red : Colors.black87,
         ),
-        onTap: isLogout
-            ? _logout
-            : navigateToSettings
-                ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsPage()),
-                    ).then((_) => _fetchUserData()); // Refresh data on return
-                  }
-                : navigateToAbout
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => AboutPage()),
-                        ).then(
-                            (_) => _fetchUserData()); // Refresh data on return
-                      }
-                    : () {},
       ),
+      onTap: isLogout
+          ? _logout
+          : navigateToSettings
+          ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsPage()),
+        ).then((_) => _fetchUserData());
+      }
+          : navigateToAbout
+          ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AboutPage()),
+        ).then((_) => _fetchUserData());
+      }
+          : navigateToSupport
+          ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => UserSupportPage()),
+        );
+      }
+          : () {},
     );
   }
 }

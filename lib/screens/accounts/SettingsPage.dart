@@ -221,20 +221,34 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Profile Avatar
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: _user?.photoURL != null
-                      ? NetworkImage(_user!.photoURL!)
-                      : null,
-                  child: _user?.photoURL == null
-                      ? const Icon(Icons.camera_alt, size: 40, color: Colors.grey)
-                      : null,
-                ),
+
+              // Profile Avatar with Edit Icon
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: _user?.photoURL != null ? NetworkImage(_user!.photoURL!) : null,
+                    child: _user?.photoURL == null
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage, // Open image picker when clicked
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.edit, size: 18, color: Colors.green),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+
               const SizedBox(height: 20),
 
               // Name Update Card
