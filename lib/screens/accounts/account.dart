@@ -5,6 +5,7 @@ import 'SettingsPage.dart';
 import 'about.dart';
 import '../widgets/bottom_navbar.dart';
 import 'UserSupport.dart';
+import 'Leaderboard.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -13,7 +14,7 @@ class AccountPage extends StatefulWidget {
   _AccountPageState createState() => _AccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> {
+class _AccountPageState extends State<AccountPage> with TickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   User? _user;
@@ -71,13 +72,18 @@ class _AccountPageState extends State<AccountPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Profile Picture with a Soft Glow Effect
                   CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.green.shade200,
-                    backgroundImage: _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
-                    child: _photoURL.isEmpty
-                        ? const Icon(Icons.person, size: 50, color: Colors.white)
-                        : null,
+                    radius: 55,
+                    backgroundColor: Colors.green.shade700,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.green.shade200,
+                      backgroundImage: _photoURL.isNotEmpty ? NetworkImage(_photoURL) : null,
+                      child: _photoURL.isEmpty
+                          ? const Icon(Icons.person, size: 50, color: Colors.white)
+                          : null,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -107,9 +113,11 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 child: Column(
                   children: [
-                    _buildButton(Icons.campaign, "Challenges", '/challenges', Colors.green.shade700),
+                    _buildAnimatedButton(Icons.campaign, "Challenges", '/challenges'),
                     const SizedBox(height: 10),
-                    _buildButton(Icons.emoji_events, "Milestones", '/milestones', Colors.green.shade700),
+                    _buildAnimatedButton(Icons.emoji_events, "Milestones", '/milestones'),
+                    const SizedBox(height: 10),
+                    _buildAnimatedButton(Icons.leaderboard, "LeaderBoards", '/leaderboard'),
                     const SizedBox(height: 20),
 
                     // Settings Section
@@ -138,14 +146,23 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
 
-      // QR Code Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/qr_scan');
+      // QR Code Floating Action Button with Hover Animation
+      floatingActionButton: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 300),
+        tween: Tween(begin: 1.0, end: 1.1),
+        builder: (context, scale, child) {
+          return Transform.scale(
+            scale: scale,
+            child: FloatingActionButton(
+              backgroundColor: Colors.green,
+              onPressed: () {
+                Navigator.pushNamed(context, '/qr_scan');
+              },
+              shape: const CircleBorder(),
+              child: const Icon(Icons.qr_code, color: Colors.white),
+            ),
+          );
         },
-        shape: const CircleBorder(),
-        child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
@@ -163,28 +180,35 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
-  Widget _buildButton(IconData icon, String label, String route, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          minimumSize: const Size(double.infinity, 50),
-        ),
-        onPressed: () {
-          Navigator.pushNamed(context, route);
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(label,
-                style: const TextStyle(fontSize: 18, color: Colors.white)),
-          ],
-        ),
-      ),
+  // Animated Button with Scaling Effect
+  Widget _buildAnimatedButton(IconData icon, String label, String route) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      tween: Tween(begin: 1.0, end: 1.05),
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, route);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 10),
+                Text(label,
+                    style: const TextStyle(fontSize: 18, color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -207,24 +231,15 @@ class _AccountPageState extends State<AccountPage> {
           ? _logout
           : navigateToSettings
           ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SettingsPage()),
-        ).then((_) => _fetchUserData());
+        Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsPage()));
       }
           : navigateToAbout
           ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => AboutPage()),
-        ).then((_) => _fetchUserData());
+        Navigator.push(context, MaterialPageRoute(builder: (context) => AboutPage()));
       }
           : navigateToSupport
           ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UserSupportPage()),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => UserSupportPage()));
       }
           : () {},
     );
