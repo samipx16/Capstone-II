@@ -67,21 +67,45 @@ class _MilestonesPageState extends State<MilestonesPage> {
     DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
     Map<String, dynamic> milestoneUpdates = {};
 
-    // Check if 'Go Plastic-Free' challenge is completed and update milestone progress
+    //  Scrappy Recycler → Recycle 50 items
+    if (userChallenges['challengeID'] == 'recycle_5') {
+      int recycleCount = userChallenges['progress'] ?? 0;
+      milestoneUpdates['milestone_1.progress'] = recycleCount.clamp(0, 50);
+    }
+
+    // Mean Green Warrior → Avoid plastic for a week
     if (userChallenges['challengeID'] == 'go_plastic_free') {
       int challengeCount = userChallenges['progress'] ?? 0;
-
-      // Update "Mean Green Warrior" progress based on this challenge
       milestoneUpdates['milestone_2.progress'] = challengeCount.clamp(0, 7);
     }
 
-    // Check if 'Recycle 5 Items' challenge is completed and update milestone progress
-    if (userChallenges['challengeID'] == 'recycle_5') {
-      int recycleCount = userChallenges['progress'] ?? 0;
-      milestoneUpdates['milestone_1.progress'] = (recycleCount * 5).clamp(0, 50);
+    // Lucky Commuter → Walk/Bike to class 10 times
+    if (userChallenges['challengeID'] == 'walk_to_class') {
+      int commuteCount = userChallenges['progress'] ?? 0;
+      milestoneUpdates['milestone_3.progress'] = commuteCount.clamp(0, 10);
     }
 
-    // Only update Firestore if there's a change
+    // Hydration Hawk → Use refill stations 20 times
+    if (userChallenges['challengeID'] == 'refill_station') {
+      int refills = userChallenges['progress'] ?? 0;
+      milestoneUpdates['milestone_4.progress'] = refills.clamp(0, 20);
+    }
+
+    // Eco Eagle → Reduce food waste 10 times
+    if (userChallenges['challengeID'] == 'meatless_week') {
+      int meatlessCount = userChallenges['progress'] ?? 0;
+      milestoneUpdates['milestone_5.progress'] = meatlessCount.clamp(0, 10);
+    }
+
+    // Ultimate Mean Green Hero → Complete All Milestones
+    bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
+        milestoneUpdates.values.every((value) => value >= 1);
+
+    if (allMilestonesCompleted) {
+      milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
+    }
+
+    // Update Firestore if any milestone progress changed
     if (milestoneUpdates.isNotEmpty) {
       await userMilestonesRef.update(milestoneUpdates);
       print("🚀 Updated milestones: $milestoneUpdates");
@@ -89,6 +113,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
       print("✅ No milestone updates needed.");
     }
   }
+
 
   Future<void> rescanChallengesAndSyncMilestones() async {
     DocumentSnapshot challengeSnapshot =
