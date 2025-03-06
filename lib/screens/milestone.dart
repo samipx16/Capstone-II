@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './widgets/bottom_navbar.dart';
+import './widgets/milestone_popup.dart';
+
 
 class MilestonesPage extends StatefulWidget {
   const MilestonesPage({super.key});
@@ -62,57 +64,71 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
-
   Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
     DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
     Map<String, dynamic> milestoneUpdates = {};
+    List<Map<String, String>> completedMilestones = [];
 
-    //  Scrappy Recycler → Recycle 50 items
+    // ♻️ Scrappy Recycler → Recycle 50 items
     if (userChallenges['challengeID'] == 'recycle_5') {
       int recycleCount = userChallenges['progress'] ?? 0;
+      if (recycleCount >= 50) completedMilestones.add({"id": "milestone_1", "title": "Scrappy Recycler"});
       milestoneUpdates['milestone_1.progress'] = recycleCount.clamp(0, 50);
     }
 
-    // Mean Green Warrior → Avoid plastic for a week
+    // 🚫 Mean Green Warrior → Avoid plastic for a week
     if (userChallenges['challengeID'] == 'go_plastic_free') {
       int challengeCount = userChallenges['progress'] ?? 0;
+      if (challengeCount >= 7) completedMilestones.add({"id": "milestone_2", "title": "Mean Green Warrior"});
       milestoneUpdates['milestone_2.progress'] = challengeCount.clamp(0, 7);
     }
 
-    // Lucky Commuter → Walk/Bike to class 10 times
+    // 🚶‍♂️ Lucky Commuter → Walk/Bike to class 10 times
     if (userChallenges['challengeID'] == 'walk_to_class') {
       int commuteCount = userChallenges['progress'] ?? 0;
+      if (commuteCount >= 10) completedMilestones.add({"id": "milestone_3", "title": "Lucky Commuter"});
       milestoneUpdates['milestone_3.progress'] = commuteCount.clamp(0, 10);
     }
 
-    // Hydration Hawk → Use refill stations 20 times
+    // 💧 Hydration Hawk → Use refill stations 20 times
     if (userChallenges['challengeID'] == 'refill_station') {
       int refills = userChallenges['progress'] ?? 0;
+      if (refills >= 20) completedMilestones.add({"id": "milestone_4", "title": "Hydration Hawk"});
       milestoneUpdates['milestone_4.progress'] = refills.clamp(0, 20);
     }
 
-    // Eco Eagle → Reduce food waste 10 times
+    // 🍽️ Eco Eagle → Reduce food waste 10 times
     if (userChallenges['challengeID'] == 'meatless_week') {
       int meatlessCount = userChallenges['progress'] ?? 0;
+      if (meatlessCount >= 10) completedMilestones.add({"id": "milestone_5", "title": "Eco Eagle"});
       milestoneUpdates['milestone_5.progress'] = meatlessCount.clamp(0, 10);
     }
 
-    // Ultimate Mean Green Hero → Complete All Milestones
+    // 🏆 Ultimate Mean Green Hero → Complete All Milestones
     bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
         milestoneUpdates.values.every((value) => value >= 1);
 
     if (allMilestonesCompleted) {
+      completedMilestones.add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
       milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
     }
 
-    // Update Firestore if any milestone progress changed
+    // 🚀 Update Firestore if any milestone progress changed
     if (milestoneUpdates.isNotEmpty) {
       await userMilestonesRef.update(milestoneUpdates);
       print("🚀 Updated milestones: $milestoneUpdates");
-    } else {
-      print("✅ No milestone updates needed.");
+    }
+
+    // 🎉 Show animation if any new milestone is completed
+    if (completedMilestones.isNotEmpty) {
+      for (var milestone in completedMilestones) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          MilestonePopup.show(context, milestone["id"]!, milestone["title"]!);
+        });
+      }
     }
   }
+
 
 
   Future<void> rescanChallengesAndSyncMilestones() async {
