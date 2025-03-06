@@ -115,6 +115,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   hintText: "Search challenges...",
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 13.0),
                 ),
               ),
             ),

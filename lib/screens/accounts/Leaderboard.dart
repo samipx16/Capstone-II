@@ -99,7 +99,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     return Scaffold(
       backgroundColor: Colors.white, // Light background
       appBar: AppBar(
-        title: const Text("🏆 Leaderboard "),
+        title: const Text(
+          "🏆 Leaderboard ",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.green,
       ),
       body: _isLoading
