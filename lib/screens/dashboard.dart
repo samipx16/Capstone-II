@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
 import './widgets/bottom_navbar.dart';
-
+import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -46,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _user = _auth.currentUser;
     _fetchUserPoints();
     _fetchUserRank();
+    _fetchWeeklyChallenges();
   }
 
   Future<void> _fetchUserPoints() async {
@@ -455,8 +456,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              // Weekly Streak Widget
+              SizedBox(
+                height: 20,
+              ),
               Card(
                 color: Colors.white,
                 child: Padding(
@@ -473,7 +475,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: List.generate(7, (index) {
                           return Column(
                             children: [
-                              _getStreakIcon(index),
+                              _getStreakIcon(
+                                  index), // Fetch icon based on streak data
                               const SizedBox(height: 4),
                               Text(_getWeekdayLabel(index)),
                             ],
@@ -510,17 +513,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Returns the correct streak icon based on the contribution status
-  Widget _getStreakIcon(int index) {
-    if (index < currentDayIndex) {
-      return weeklyContributions[index] == true
-          ? const Icon(Icons.check_circle, color: Colors.green, size: 30)
-          : const Icon(Icons.cancel, color: Colors.red, size: 30);
-    } else if (index == currentDayIndex) {
-      return const Icon(Icons.circle, color: Colors.blue, size: 30);
-    } else {
-      return const Icon(Icons.circle, color: Colors.grey, size: 30);
+  Future<void> _fetchWeeklyChallenges() async {
+    try {
+      if (_user == null) return;
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      DateTime now = DateTime.now();
+      DateTime startOfWeek =
+          now.subtract(Duration(days: now.weekday - 1)); // Monday
+      DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
+
+      // Fetch all challenges for the user (without range filter)
+      QuerySnapshot userChallengesSnapshot = await firestore
+          .collection('user_challenges')
+          .where('userID', isEqualTo: _user!.uid) // Only filter by userID
+          .get();
+      // Store streak status for each day (Monday-Sunday)
+      Map<int, bool> streakDays = {for (int i = 0; i < 7; i++) i: false};
+      for (var doc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            doc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null || !challengeData.containsKey('lastUpdated'))
+          continue;
+
+        Timestamp? challengeTimestamp =
+            challengeData['lastUpdated'] as Timestamp?;
+        if (challengeTimestamp == null) continue;
+
+        DateTime challengeDate = challengeTimestamp.toDate();
+
+        // Manually filter the timestamp in Dart
+        if (challengeDate
+                .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+            challengeDate.isBefore(endOfWeek.add(const Duration(seconds: 1)))) {
+          int dayIndex = challengeDate.weekday - 1; // Convert Mon-Sun to 0-6
+          streakDays[dayIndex] = true;
+        }
+      }
+
+      setState(() {
+        _streakDays = streakDays;
+      });
+    } catch (e) {
+      print("Error fetching weekly challenges: $e");
     }
+  }
+
+// Map for tracking streak
+  Map<int, bool> _streakDays = {for (int i = 0; i < 7; i++) i: false};
+
+// Function to return a check icon if the challenge is completed for that day
+  Widget _getStreakIcon(int index) {
+    return Icon(
+      _streakDays[index] == true ? Icons.check_circle : Icons.cancel,
+      color: _streakDays[index] == true ? Colors.green : Colors.grey,
+      size: 30,
+    );
   }
 
   // Returns the weekday abbreviation
