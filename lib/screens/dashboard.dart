@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
 import './widgets/bottom_navbar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,10 +24,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
     null,
     null,
   ];
-
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _topThree = [];
   // Get the current weekday index (0 = Monday, 6 = Sunday)
   final int currentDayIndex =
       DateTime.now().weekday - 1; // Adjust index (Monday = 0)
+  @override
+  void initState() {
+    super.initState();
+    _fetchTopThree();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchTopThree() async {
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+      Map<String, String> userNames = {};
+
+      // Fetch all users
+      QuerySnapshot usersSnapshot = await firestore.collection('users').get();
+      for (var userDoc in usersSnapshot.docs) {
+        String userId = userDoc.id;
+        Map<String, dynamic>? userData =
+            userDoc.data() as Map<String, dynamic>?;
+
+        if (userData != null) {
+          userNames[userId] = userData['name'] ?? 'Unknown';
+          userScores[userId] = 0;
+        }
+      }
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed' && userScores.containsKey(userId)) {
+          DocumentSnapshot challengeSnapshot =
+              await firestore.collection('challenges').doc(challengeId).get();
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            userScores[userId] =
+                (userScores[userId] ?? 0) + (progress * points);
+          }
+        }
+      }
+
+      // Sort and take the top 3 players
+      List<Map<String, dynamic>> sortedLeaderboard = userScores.entries
+          .map((entry) => {
+                'name': userNames[entry.key] ?? "Unknown",
+                'score': entry.value ?? 0,
+              })
+          .toList();
+
+      sortedLeaderboard.sort((a, b) => (b['score']).compareTo(a['score']));
+
+      return sortedLeaderboard.take(3).toList();
+    } catch (e) {
+      print("Error fetching top three leaderboard: $e");
+      return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,28 +268,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
-                          child: SingleChildScrollView( // ✅ Added to prevent overflow
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                          child: SingleChildScrollView(
+                            // ✅ Added to prevent overflow
+                            child: FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _fetchTopThree(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+                                if (snapshot.hasError ||
+                                    snapshot.data == null ||
+                                    snapshot.data!.isEmpty) {
+                                  return const Center(
+                                      child: Text(
+                                          "No leaderboard data available"));
+                                }
+
+                                List<Map<String, dynamic>> topThree =
+                                    snapshot.data!;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "Leaderboard",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          "Leaderboard",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Spacer(),
+                                        Icon(Icons.star, color: Colors.amber),
+                                      ],
                                     ),
-                                    Spacer(),
-                                    Icon(Icons.star, color: Colors.amber),
+                                    const SizedBox(height: 8),
+
+                                    // ✅ Dynamic leaderboard entries using Firestore data
+                                    _leaderboardEntry(
+                                        "1. ${topThree[0]['name']}",
+                                        topThree[0]['score'],
+                                        Colors.amber),
+                                    if (topThree.length > 1)
+                                      _leaderboardEntry(
+                                          "2. ${topThree[1]['name']}",
+                                          topThree[1]['score'],
+                                          Colors.grey),
+                                    if (topThree.length > 2)
+                                      _leaderboardEntry(
+                                          "3. ${topThree[2]['name']}",
+                                          topThree[2]['score'],
+                                          Colors.brown),
                                   ],
-                                ),
-                                const SizedBox(height: 8),
-                                _leaderboardEntry("1. Nia Zhang", 4500, Colors.amber),
-                                _leaderboardEntry("2. John Cena", 3800, Colors.grey),
-                                _leaderboardEntry("3. Zack Ryder", 3700, Colors.brown),
-                              ],
+                                );
+                              },
                             ),
                           ),
                         ),
