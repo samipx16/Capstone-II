@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
 import './widgets/bottom_navbar.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -24,7 +26,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     null,
     null,
   ];
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  User? _user;
+  int _userPoints = 0;
+  int _userRank = 0;
+
   bool _isLoading = true;
   List<Map<String, dynamic>> _topThree = [];
   // Get the current weekday index (0 = Monday, 6 = Sunday)
@@ -34,6 +43,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _fetchTopThree();
+    _user = _auth.currentUser;
+    _fetchUserPoints();
+    _fetchUserRank();
+  }
+
+  Future<void> _fetchUserPoints() async {
+    try {
+      if (_user == null) return;
+      String userId = _user!.uid;
+      int totalPoints = 0;
+
+      QuerySnapshot userChallengesSnapshot = await _firestore
+          .collection('user_challenges')
+          .where('userID', isEqualTo: userId)
+          .where('status', isEqualTo: 'completed')
+          .get();
+
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+
+        if (challengeId != null) {
+          DocumentSnapshot challengeSnapshot =
+              await _firestore.collection('challenges').doc(challengeId).get();
+
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            totalPoints += (progress * points);
+          }
+        }
+      }
+
+      setState(() {
+        _userPoints = totalPoints;
+      });
+    } catch (e) {
+      print("Error fetching user points: $e");
+    }
+  }
+
+  /// Fetch user rank from the leaderboard
+  Future<void> _fetchUserRank() async {
+    try {
+      QuerySnapshot leaderboardSnapshot = await _firestore
+          .collection('leaderboard')
+          .orderBy('points', descending: true)
+          .get();
+
+      int rank = 1;
+      for (var doc in leaderboardSnapshot.docs) {
+        if (doc.id == _user!.uid) {
+          setState(() {
+            _userRank = rank;
+          });
+          break;
+        }
+        rank++;
+      }
+    } catch (e) {
+      print("Error fetching user rank: $e");
+    }
   }
 
   Future<List<Map<String, dynamic>>> _fetchTopThree() async {
