@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './widgets/bottom_navbar.dart';
 import './widgets/milestone_popup.dart';
+import './widgets/milestone_details_sheet.dart';
 
 class MilestonesPage extends StatefulWidget {
   const MilestonesPage({super.key});
@@ -55,7 +56,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
       // Process each updated challenge document
       for (var doc in querySnapshot.docs) {
         Map<String, dynamic> userChallenges =
-            doc.data() as Map<String, dynamic>;
+        doc.data() as Map<String, dynamic>;
         print("📌 Updated userChallenges: $userChallenges");
 
         // Sync milestones with the updated challenges
@@ -64,12 +65,15 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
-  Future<void> _syncMilestonesWithChallenges(
-      Map<String, dynamic> userChallenges) async {
-    DocumentReference userMilestonesRef =
-        _firestore.collection('user_milestones').doc(uid);
+  Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
+    DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
     Map<String, dynamic> milestoneUpdates = {};
     List<Map<String, String>> completedMilestones = [];
+
+    // Fetch the current milestone data
+    DocumentSnapshot milestoneSnapshot = await userMilestonesRef.get();
+    Map<String, dynamic> currentMilestones = milestoneSnapshot.data() as Map<String, dynamic>;
+
     final List<Map<String, dynamic>> challenges = [
       {
         'id': 'recycle_5',
@@ -106,12 +110,16 @@ class _MilestonesPageState extends State<MilestonesPage> {
     for (var challenge in challenges) {
       if (userChallenges['challengeID'] == challenge['id']) {
         int progress = userChallenges['progress'] ?? 0;
-        if (progress >= challenge['goal']) {
-          completedMilestones
-              .add({'id': challenge['milestone'], 'title': challenge['title']});
+        bool isCompleted = progress >= challenge['goal'];
+
+        // Check if the milestone is completed for the first time
+        if (isCompleted && currentMilestones[challenge['milestone']]['completed'] != true) {
+          completedMilestones.add({'id': challenge['milestone'], 'title': challenge['title']});
         }
-        milestoneUpdates['${challenge['milestone']}.progress'] =
-            progress.clamp(0, challenge['goal']);
+
+        // Update progress and completed status
+        milestoneUpdates['${challenge['milestone']}.progress'] = progress.clamp(0, challenge['goal']);
+        milestoneUpdates['${challenge['milestone']}.completed'] = isCompleted;
       }
     }
 
@@ -119,10 +127,10 @@ class _MilestonesPageState extends State<MilestonesPage> {
     bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
         milestoneUpdates.values.every((value) => value >= 1);
 
-    if (allMilestonesCompleted) {
-      completedMilestones
-          .add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
+    if (allMilestonesCompleted && currentMilestones['milestone_6']['completed'] != true) {
+      completedMilestones.add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
       milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
+      milestoneUpdates['milestone_6.completed'] = true;
     }
 
     // 🚀 Update Firestore if any milestone progress changed
@@ -143,9 +151,9 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
   Future<void> rescanChallengesAndSyncMilestones() async {
     DocumentSnapshot challengeSnapshot =
-        await _firestore.collection('user_challenges').doc(uid).get();
+    await _firestore.collection('user_challenges').doc(uid).get();
     DocumentSnapshot milestoneSnapshot =
-        await _firestore.collection('user_milestones').doc(uid).get();
+    await _firestore.collection('user_milestones').doc(uid).get();
 
     if (!challengeSnapshot.exists || !milestoneSnapshot.exists) {
       print("⚠️ No existing challenge or milestone data found.");
@@ -153,9 +161,9 @@ class _MilestonesPageState extends State<MilestonesPage> {
     }
 
     Map<String, dynamic> userChallenges =
-        challengeSnapshot.data() as Map<String, dynamic>;
+    challengeSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> userMilestones =
-        milestoneSnapshot.data() as Map<String, dynamic>;
+    milestoneSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> milestoneUpdates = {};
 
     // 🔥 Rescan "Go Plastic-Free" Challenge and Sync it with "Mean Green Warrior"
@@ -198,26 +206,28 @@ class _MilestonesPageState extends State<MilestonesPage> {
   /// Ensures that the new user has a milestone document in Firestore.
   Future<void> _initializeUserMilestones() async {
     DocumentReference userMilestonesRef =
-        _firestore.collection('user_milestones').doc(uid);
+    _firestore.collection('user_milestones').doc(uid);
     DocumentSnapshot snapshot = await userMilestonesRef.get();
 
     if (!snapshot.exists || snapshot.data() == null) {
       print("Initializing milestones for new user: $uid");
 
       await userMilestonesRef.set({
-        "milestone_1": {"title": "Scrappy Recycler", "goal": 50, "progress": 0},
+        "milestone_1": {"title": "Scrappy Recycler", "goal": 50, "progress": 0, "completed": false},
         "milestone_2": {
           "title": "Mean Green Warrior",
           "goal": 7,
-          "progress": 0
+          "progress": 0,
+          "completed": false
         },
-        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0},
-        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0},
-        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0},
+        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0, "completed": false},
+        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0, "completed": false},
+        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0, "completed": false},
         "milestone_6": {
           "title": "Ultimate Mean Green Hero",
           "goal": 5,
-          "progress": 0
+          "progress": 0,
+          "completed": false
         },
       });
     } else {
@@ -249,14 +259,14 @@ class _MilestonesPageState extends State<MilestonesPage> {
           }
 
           Map<String, dynamic>? milestones =
-              snapshot.data!.data() as Map<String, dynamic>?;
+          snapshot.data!.data() as Map<String, dynamic>?;
 
           if (milestones == null || milestones.isEmpty) {
             return const Center(
                 child: Text(
-              "No milestones available. Please try again later.",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ));
+                  "No milestones available. Please try again later.",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ));
           }
 
           return ListView(
@@ -289,88 +299,103 @@ class _MilestonesPageState extends State<MilestonesPage> {
     });
   }
 
+  // Add the showMilestoneDetails method here
+  void showMilestoneDetails(BuildContext context, Map<String, dynamic> milestone, String key) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return MilestoneDetailsSheet(milestone: milestone, milestoneKey: key);
+      },
+    );
+  }
   /// Builds each milestone card with improved layout, bigger images, and descriptions.
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, String key) {
-    double progressPercent =
-        (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
+    double progressPercent = (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
+    bool isCompleted = milestone['completed'] == true;
     String badgePath = 'assets/$key.png';
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Larger Badge Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                badgePath,
-                width: 80, // Bigger badge
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.image_not_supported,
-                      size: 80, color: Colors.grey);
-                },
+    return GestureDetector(
+      onTap: () => showMilestoneDetails(context, milestone, key),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 4,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Badge Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  badgePath,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image_not_supported,
+                        size: 80, color: Colors.grey);
+                  },
+                ),
               ),
-            ),
 
-            const SizedBox(width: 16),
+              const SizedBox(width: 16),
 
-            // Milestone Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    milestone['title'],
-                    style: const TextStyle(
-                      fontSize: 20, // Bigger font
-                      fontWeight: FontWeight.bold,
+              // Milestone Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      milestone['title'],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Short Description (Lower Opacity)
-                  Text(
-                    _getMilestoneDescription(milestone['title']),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black.withOpacity(0.6),
+                    // Short Description
+                    Text(
+                      _getMilestoneDescription(milestone['title']),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                  // Thicker Progress Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: progressPercent,
-                      backgroundColor: Colors.grey[300],
-                      color: Colors.green,
-                      minHeight: 12, // Increased thickness
+                    // Progress Bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: progressPercent,
+                        backgroundColor: Colors.grey[300],
+                        color: Colors.green,
+                        minHeight: 12,
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                  Text(
-                    "${milestone['progress']} / ${milestone['goal']} completed",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                    // Progress Text
+                    Text(
+                      "${milestone['progress']} / ${milestone['goal']} completed",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
