@@ -94,14 +94,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Fetch user rank from the leaderboard
   Future<void> _fetchUserRank() async {
     try {
-      QuerySnapshot leaderboardSnapshot = await _firestore
-          .collection('leaderboard')
-          .orderBy('points', descending: true)
-          .get();
+      if (_user == null) return;
 
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed') {
+          DocumentSnapshot challengeSnapshot =
+              await firestore.collection('challenges').doc(challengeId).get();
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            userScores[userId] =
+                (userScores[userId] ?? 0) + (progress * points);
+          }
+        }
+      }
+
+      // Convert to a sorted list (highest score first)
+      List<MapEntry<String, int>> sortedLeaderboard =
+          userScores.entries.toList();
+      sortedLeaderboard.sort((a, b) => b.value.compareTo(a.value));
+
+      // Find the current user's rank
       int rank = 1;
-      for (var doc in leaderboardSnapshot.docs) {
-        if (doc.id == _user!.uid) {
+      for (var entry in sortedLeaderboard) {
+        if (entry.key == _user!.uid) {
           setState(() {
             _userRank = rank;
           });
@@ -243,36 +280,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   width: 50,
                                   height: 50,
                                   child: CircularProgressIndicator(
-                                    value: 65 / 100, // Example progress
+                                    value: (_userPoints / 100)
+                                        .clamp(0.0, 1.0), // Normalized progress
                                     backgroundColor: Colors.grey[300],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFF2E7D32)), // Green progress
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            Color(
+                                                0xFF2E7D32)), // Green progress
                                     strokeWidth: 6,
                                   ),
                                 ),
-                                Icon(Icons.emoji_events,
+                                const Icon(Icons.star,
                                     color: Color(0xFFFAE500), size: 30),
                               ],
                             ),
-                            SizedBox(height: 8),
-                            Text("65 pts",
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold))
+                            const SizedBox(height: 8),
+                            Text("$_userPoints pts",
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         Column(
                           children: [
-                            Icon(Icons.emoji_events,
+                            const Icon(Icons.emoji_events,
                                 color: Color(0xFFFAE500), size: 30),
-                            SizedBox(height: 4),
-                            Text("#7th",
-                                style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black)),
-                            Text("Your Rank",
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                              "#$_userRank",
+                              style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black),
+                            ),
+                            const Text(
+                              "Your Rank",
+                              style:
+                                  TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
                           ],
                         ),
                         Column(
