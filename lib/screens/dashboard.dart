@@ -33,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   User? _user;
   int _userPoints = 0;
   int _userRank = 0;
+  int _userRecycled = 0;
 
   bool _isLoading = true;
   List<Map<String, dynamic>> _topThree = [];
@@ -89,6 +90,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     } catch (e) {
       print("Error fetching user points: $e");
+    }
+  }
+
+  /// Fetch user rank from the leaderboard
+  Future<void> _fetchRecycle() async {
+    try {
+      if (_user == null) return;
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+      int count = 0;
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed' && userId == _user!.uid) {
+          count++;
+        }
+      }
+      setState(() {
+        _userRecycled = count;
+      });
+    } catch (e) {
+      print("Error fetching user rank: $e");
     }
   }
 
@@ -325,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Icon(Icons.recycling,
                                 color: Color(0xFFFAE500), size: 30),
                             SizedBox(height: 4),
-                            Text("13",
+                            Text("$_userRecycled",
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
