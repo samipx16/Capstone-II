@@ -44,8 +44,11 @@ dependencies:
   geolocator: ^13.0.2
   image_picker: ^1.1.2
   #qr_code_scanner: ^1.0.1
-  mobile_scanner: ^3.4.1
+  mobile_scanner: ^6.0.6
   firebase_storage: ^12.4.3
+  #confetti
+  confetti: ^0.8.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

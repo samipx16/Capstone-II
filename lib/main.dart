@@ -5,6 +5,7 @@ import 'screens/login.dart';
 import 'firebase_options.dart';
 import 'screens/registration.dart';
 import 'screens/dashboard.dart';
+import 'screens/accounts/Leaderboard.dart';
 import 'screens/challenge/challenges.dart';
 import 'screens/challenge/types/daily_challenges.dart';
 import 'screens/challenge/types/weekly_challenges.dart';
@@ -38,6 +39,8 @@ class EcoEagleApp extends StatelessWidget {
         '/oneTimeChallenges': (context) => const OneTimeChallengesScreen(),
         '/milestones': (context) => MilestonesPage(),
         '/accounts': (context) => AccountPage(),
+        '/leaderboard': (context) => LeaderboardPage(), //Basic
+
       },
     );
   }

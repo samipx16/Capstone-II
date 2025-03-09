@@ -35,7 +35,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _nameController.text = user.displayName ?? "";
       });
 
-      DocumentSnapshot doc = await _firestore.collection('users').doc(user.uid).get();
+      DocumentSnapshot doc =
+      await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         setState(() {
           _nameController.text = doc['name'] ?? "";
@@ -53,7 +54,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _updateProfile() async {
     try {
       if (_user != null) {
-        DocumentReference userRef = _firestore.collection('users').doc(_user!.uid);
+        DocumentReference userRef =
+        _firestore.collection('users').doc(_user!.uid);
         DocumentSnapshot docSnapshot = await userRef.get();
         if (!docSnapshot.exists) {
           await userRef.set({
@@ -78,30 +80,30 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+      _uploadProfilePicture();
+    }
+  }
+
   Future<void> _uploadProfilePicture() async {
     if (_image == null || _user == null) return;
 
     try {
-      // Define storage path
-      Reference storageRef = FirebaseStorage.instance.ref().child('profile_pictures/${_user!.uid}.jpg');
-
-      // Start upload
+      Reference storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures/${_user!.uid}.jpg');
       UploadTask uploadTask = storageRef.putFile(_image!);
+      TaskSnapshot snapshot = await uploadTask.whenComplete(() {});
 
-      // Listen to upload status
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        print("Upload Progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}");
-      });
-
-      // Wait for completion
-      TaskSnapshot snapshot = await uploadTask.whenComplete(() => print("Upload Completed"));
-
-      // Get the download URL
       String downloadURL = await snapshot.ref.getDownloadURL();
-      print("Download URL: $downloadURL");
 
-      // Update Firestore with new photo URL
-      DocumentReference userRef = _firestore.collection('users').doc(_user!.uid);
+      DocumentReference userRef =
+      _firestore.collection('users').doc(_user!.uid);
       DocumentSnapshot docSnapshot = await userRef.get();
 
       if (!docSnapshot.exists) {
@@ -114,7 +116,6 @@ class _SettingsPageState extends State<SettingsPage> {
         await userRef.update({'photoURL': downloadURL});
       }
 
-      // Update Firebase Auth profile photo
       await _user!.updatePhotoURL(downloadURL);
 
       setState(() {});
@@ -123,20 +124,18 @@ class _SettingsPageState extends State<SettingsPage> {
         SnackBar(content: Text("Profile picture updated successfully")),
       );
     } catch (e) {
-      print("Error uploading picture: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error uploading picture: $e")),
       );
     }
   }
 
-
   Future<void> _changePassword() async {
     String? currentPassword = await _showCurrentPasswordDialog();
 
     if (currentPassword == null || currentPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Password update canceled")),
+        const SnackBar(content: Text("Password update canceled")),
       );
       return;
     }
@@ -157,13 +156,19 @@ class _SettingsPageState extends State<SettingsPage> {
           // If reauthentication is successful, update the password
           await user.updatePassword(_passwordController.text);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Password updated successfully")),
+            const SnackBar(content: Text("Password updated successfully")),
           );
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error updating password: $e")),
-        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'wrong-password') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Incorrect current password.")),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error updating password: ${e.message}")),
+          );
+        }
       }
     }
   }
@@ -174,14 +179,14 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Reauthenticate"),
+          title: const Text("Reauthenticate"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Enter your current password to proceed."),
+              const Text("Enter your current password to proceed."),
               TextField(
                 controller: currentPasswordController,
-                decoration: InputDecoration(labelText: "Current Password"),
+                decoration: const InputDecoration(labelText: "Current Password"),
                 obscureText: true,
               ),
             ],
@@ -189,13 +194,13 @@ class _SettingsPageState extends State<SettingsPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, null), // Cancel
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, currentPasswordController.text);
               },
-              child: Text("Confirm"),
+              child: const Text("Confirm"),
             ),
           ],
         );
@@ -204,60 +209,112 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-      _uploadProfilePicture();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Settings"),
+        title: const Text("Settings"),
         backgroundColor: Colors.green,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+
+              // Profile Avatar with Edit Icon
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: _user?.photoURL != null ? NetworkImage(_user!.photoURL!) : null,
+                    child: _user?.photoURL == null
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage, // Open image picker when clicked
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.edit, size: 18, color: Colors.green),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Name Update Card
+              _buildSettingsCard(
+                icon: Icons.person,
+                title: "Update Name",
+                hintText: "Enter New Name",
+                controller: _nameController,
+                onPressed: _updateProfile,
+                buttonText: "Save Name",
+              ),
+
+              // Password Change Card
+              _buildSettingsCard(
+                icon: Icons.lock,
+                title: "Change Password",
+                hintText: "Enter New Password",
+                controller: _passwordController,
+                onPressed: _changePassword,
+                buttonText: "Change Password",
+                obscureText: true,
+              ),
+
+              // AI Art at Bottom
+
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard({
+    required IconData icon,
+    required String title,
+    required String hintText,
+    required TextEditingController controller,
+    required VoidCallback onPressed,
+    required String buttonText,
+    bool obscureText = false,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: _user?.photoURL != null
-                    ? NetworkImage(_user!.photoURL!)
-                    : null,
-                child: _user?.photoURL == null
-                    ? Icon(Icons.camera_alt, size: 40, color: Colors.grey)
-                    : null,
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 5),
+            TextField(
+              controller: controller,
+              obscureText: obscureText,
+              decoration: InputDecoration(
+                prefixIcon: Icon(icon, color: Colors.green),
+                hintText: hintText,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               ),
             ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: "Update Name"),
-            ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _updateProfile,
-              child: Text("Save Name"),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: "New Password"),
-              obscureText: true,
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _changePassword,
-              child: Text("Change Password"),
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: Text(buttonText, style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),

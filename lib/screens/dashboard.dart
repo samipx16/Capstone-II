@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecoeagle/screens/map_screen.dart';
 import './widgets/bottom_navbar.dart';
+import 'dart:developer';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,9 +27,234 @@ class _DashboardScreenState extends State<DashboardScreen> {
     null,
   ];
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  User? _user;
+  int _userPoints = 0;
+  int _userRank = 0;
+  int _userRecycled = 0;
+
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _topThree = [];
   // Get the current weekday index (0 = Monday, 6 = Sunday)
   final int currentDayIndex =
       DateTime.now().weekday - 1; // Adjust index (Monday = 0)
+  @override
+  void initState() {
+    super.initState();
+    _fetchTopThree();
+    _user = _auth.currentUser;
+    _fetchUserPoints();
+    _fetchUserRank();
+    _fetchWeeklyChallenges();
+  }
+
+  Future<void> _fetchUserPoints() async {
+    try {
+      if (_user == null) return;
+      String userId = _user!.uid;
+      int totalPoints = 0;
+
+      QuerySnapshot userChallengesSnapshot = await _firestore
+          .collection('user_challenges')
+          .where('userID', isEqualTo: userId)
+          .where('status', isEqualTo: 'completed')
+          .get();
+
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+
+        if (challengeId != null) {
+          DocumentSnapshot challengeSnapshot =
+              await _firestore.collection('challenges').doc(challengeId).get();
+
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            totalPoints += (progress * points);
+          }
+        }
+      }
+
+      setState(() {
+        _userPoints = totalPoints;
+      });
+    } catch (e) {
+      print("Error fetching user points: $e");
+    }
+  }
+
+  /// Fetch user rank from the leaderboard
+  Future<void> _fetchRecycle() async {
+    try {
+      if (_user == null) return;
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+      int count = 0;
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed' && userId == _user!.uid) {
+          count++;
+        }
+      }
+      setState(() {
+        _userRecycled = count;
+      });
+    } catch (e) {
+      print("Error fetching user rank: $e");
+    }
+  }
+
+  /// Fetch user rank from the leaderboard
+  Future<void> _fetchUserRank() async {
+    try {
+      if (_user == null) return;
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed') {
+          DocumentSnapshot challengeSnapshot =
+              await firestore.collection('challenges').doc(challengeId).get();
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            userScores[userId] =
+                (userScores[userId] ?? 0) + (progress * points);
+          }
+        }
+      }
+
+      // Convert to a sorted list (highest score first)
+      List<MapEntry<String, int>> sortedLeaderboard =
+          userScores.entries.toList();
+      sortedLeaderboard.sort((a, b) => b.value.compareTo(a.value));
+
+      // Find the current user's rank
+      int rank = 1;
+      for (var entry in sortedLeaderboard) {
+        if (entry.key == _user!.uid) {
+          setState(() {
+            _userRank = rank;
+          });
+          break;
+        }
+        rank++;
+      }
+    } catch (e) {
+      print("Error fetching user rank: $e");
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchTopThree() async {
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      Map<String, int> userScores = {};
+      Map<String, String> userNames = {};
+
+      // Fetch all users
+      QuerySnapshot usersSnapshot = await firestore.collection('users').get();
+      for (var userDoc in usersSnapshot.docs) {
+        String userId = userDoc.id;
+        Map<String, dynamic>? userData =
+            userDoc.data() as Map<String, dynamic>?;
+
+        if (userData != null) {
+          userNames[userId] = userData['name'] ?? 'Unknown';
+          userScores[userId] = 0;
+        }
+      }
+
+      // Fetch user challenge progress
+      QuerySnapshot userChallengesSnapshot =
+          await firestore.collection('user_challenges').get();
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? userId = challengeData['userID'];
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+        String status = challengeData['status'] ?? '';
+
+        if (userId == null || challengeId == null) continue;
+
+        if (status == 'completed' && userScores.containsKey(userId)) {
+          DocumentSnapshot challengeSnapshot =
+              await firestore.collection('challenges').doc(challengeId).get();
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            userScores[userId] =
+                (userScores[userId] ?? 0) + (progress * points);
+          }
+        }
+      }
+
+      // Sort and take the top 3 players
+      List<Map<String, dynamic>> sortedLeaderboard = userScores.entries
+          .map((entry) => {
+                'name': userNames[entry.key] ?? "Unknown",
+                'score': entry.value ?? 0,
+              })
+          .toList();
+
+      sortedLeaderboard.sort((a, b) => (b['score']).compareTo(a['score']));
+
+      return sortedLeaderboard.take(3).toList();
+    } catch (e) {
+      print("Error fetching top three leaderboard: $e");
+      return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,36 +319,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   width: 50,
                                   height: 50,
                                   child: CircularProgressIndicator(
-                                    value: 65 / 100, // Example progress
+                                    value: (_userPoints / 100)
+                                        .clamp(0.0, 1.0), // Normalized progress
                                     backgroundColor: Colors.grey[300],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFF2E7D32)), // Green progress
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            Color(
+                                                0xFF2E7D32)), // Green progress
                                     strokeWidth: 6,
                                   ),
                                 ),
-                                Icon(Icons.emoji_events,
+                                const Icon(Icons.star,
                                     color: Color(0xFFFAE500), size: 30),
                               ],
                             ),
-                            SizedBox(height: 8),
-                            Text("65 pts",
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold))
+                            const SizedBox(height: 8),
+                            Text("$_userPoints pts",
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         Column(
                           children: [
-                            Icon(Icons.emoji_events,
+                            const Icon(Icons.emoji_events,
                                 color: Color(0xFFFAE500), size: 30),
-                            SizedBox(height: 4),
-                            Text("#7th",
-                                style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black)),
-                            Text("Your Rank",
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                              "#$_userRank",
+                              style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black),
+                            ),
+                            const Text(
+                              "Your Rank",
+                              style:
+                                  TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
                           ],
                         ),
                         Column(
@@ -128,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Icon(Icons.recycling,
                                 color: Color(0xFFFAE500), size: 30),
                             SizedBox(height: 4),
-                            Text("13",
+                            Text("$_userRecycled",
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
@@ -194,30 +429,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    "Leaderboard",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                          child: SingleChildScrollView(
+                            // ✅ Added to prevent overflow
+                            child: FutureBuilder<List<Map<String, dynamic>>>(
+                              future: _fetchTopThree(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+                                if (snapshot.hasError ||
+                                    snapshot.data == null ||
+                                    snapshot.data!.isEmpty) {
+                                  return const Center(
+                                      child: Text(
+                                          "No leaderboard data available"));
+                                }
+
+                                List<Map<String, dynamic>> topThree =
+                                    snapshot.data!;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          "Leaderboard",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Spacer(),
+                                        Icon(Icons.star, color: Colors.amber),
+                                      ],
                                     ),
-                                  ),
-                                  Spacer(),
-                                  Icon(Icons.star, color: Colors.amber),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _leaderboardEntry(
-                                  "1. Nia Zhang", 4500, Colors.amber),
-                              _leaderboardEntry(
-                                  "2. John Cena", 3800, Colors.grey),
-                              _leaderboardEntry(
-                                  "3. Zack Ryder", 3700, Colors.brown),
-                            ],
+                                    const SizedBox(height: 8),
+
+                                    // ✅ Dynamic leaderboard entries using Firestore data
+                                    _leaderboardEntry(
+                                        "1. ${topThree[0]['name']}",
+                                        topThree[0]['score'],
+                                        Colors.amber),
+                                    if (topThree.length > 1)
+                                      _leaderboardEntry(
+                                          "2. ${topThree[1]['name']}",
+                                          topThree[1]['score'],
+                                          Colors.grey),
+                                    if (topThree.length > 2)
+                                      _leaderboardEntry(
+                                          "3. ${topThree[2]['name']}",
+                                          topThree[2]['score'],
+                                          Colors.brown),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -225,8 +494,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              // Weekly Streak Widget
+              SizedBox(
+                height: 20,
+              ),
               Card(
                 color: Colors.white,
                 child: Padding(
@@ -243,7 +513,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: List.generate(7, (index) {
                           return Column(
                             children: [
-                              _getStreakIcon(index),
+                              _getStreakIcon(
+                                  index), // Fetch icon based on streak data
                               const SizedBox(height: 4),
                               Text(_getWeekdayLabel(index)),
                             ],
@@ -280,17 +551,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Returns the correct streak icon based on the contribution status
-  Widget _getStreakIcon(int index) {
-    if (index < currentDayIndex) {
-      return weeklyContributions[index] == true
-          ? const Icon(Icons.check_circle, color: Colors.green, size: 30)
-          : const Icon(Icons.cancel, color: Colors.red, size: 30);
-    } else if (index == currentDayIndex) {
-      return const Icon(Icons.circle, color: Colors.blue, size: 30);
-    } else {
-      return const Icon(Icons.circle, color: Colors.grey, size: 30);
+  Future<void> _fetchWeeklyChallenges() async {
+    try {
+      if (_user == null) return;
+
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      DateTime now = DateTime.now();
+      DateTime startOfWeek =
+          now.subtract(Duration(days: now.weekday - 1)); // Monday
+      DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
+
+      // Fetch all challenges for the user (without range filter)
+      QuerySnapshot userChallengesSnapshot = await firestore
+          .collection('user_challenges')
+          .where('userID', isEqualTo: _user!.uid) // Only filter by userID
+          .get();
+      // Store streak status for each day (Monday-Sunday)
+      Map<int, bool> streakDays = {for (int i = 0; i < 7; i++) i: false};
+      for (var doc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            doc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null || !challengeData.containsKey('lastUpdated'))
+          continue;
+
+        Timestamp? challengeTimestamp =
+            challengeData['lastUpdated'] as Timestamp?;
+        if (challengeTimestamp == null) continue;
+
+        DateTime challengeDate = challengeTimestamp.toDate();
+
+        // Manually filter the timestamp in Dart
+        if (challengeDate
+                .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+            challengeDate.isBefore(endOfWeek.add(const Duration(seconds: 1)))) {
+          int dayIndex = challengeDate.weekday - 1; // Convert Mon-Sun to 0-6
+          streakDays[dayIndex] = true;
+        }
+      }
+
+      setState(() {
+        _streakDays = streakDays;
+      });
+    } catch (e) {
+      print("Error fetching weekly challenges: $e");
     }
+  }
+
+// Map for tracking streak
+  Map<int, bool> _streakDays = {for (int i = 0; i < 7; i++) i: false};
+
+// Function to return a check icon if the challenge is completed for that day
+  Widget _getStreakIcon(int index) {
+    return Icon(
+      _streakDays[index] == true ? Icons.check_circle : Icons.cancel,
+      color: _streakDays[index] == true ? Colors.green : Colors.grey,
+      size: 30,
+    );
   }
 
   // Returns the weekday abbreviation

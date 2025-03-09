@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'SettingsPage.dart'; // Import the SettingsPage
+import 'SettingsPage.dart';
 import 'about.dart';
 import '../widgets/bottom_navbar.dart';
+import 'UserSupport.dart';
+import 'Leaderboard.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
   @override
-  _AccountPageState createState() => _AccountPageState();
+  _AccountPageState createState() => _AccountPageState(); // design Final
 }
 
-class _AccountPageState extends State<AccountPage> {
+class _AccountPageState extends State<AccountPage>
+    with TickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   User? _user;
@@ -24,6 +27,57 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     _fetchUserData();
+    _fetchUserPoints(); // Fetch user's total points
+  }
+
+  int _userPoints = 0; // Variable to store the total points
+
+  Future<void> _fetchUserPoints() async {
+    try {
+      if (_user == null) return;
+
+      String userId = _user!.uid;
+      int totalPoints = 0;
+
+      // Fetch user challenges
+      QuerySnapshot userChallengesSnapshot = await _firestore
+          .collection('user_challenges')
+          .where('userID', isEqualTo: userId)
+          .where('status',
+              isEqualTo: 'completed') // Only count completed challenges
+          .get();
+
+      for (var challengeDoc in userChallengesSnapshot.docs) {
+        Map<String, dynamic>? challengeData =
+            challengeDoc.data() as Map<String, dynamic>?;
+
+        if (challengeData == null) continue;
+
+        String? challengeId = challengeData['challengeID'];
+        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
+
+        if (challengeId != null) {
+          // Fetch challenge points
+          DocumentSnapshot challengeSnapshot =
+              await _firestore.collection('challenges').doc(challengeId).get();
+
+          Map<String, dynamic>? challengeInfo =
+              challengeSnapshot.data() as Map<String, dynamic>?;
+
+          if (challengeInfo != null) {
+            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
+            totalPoints += (progress * points);
+          }
+        }
+      }
+
+      // Update state with total points
+      setState(() {
+        _userPoints = totalPoints;
+      });
+    } catch (e) {
+      print("Error fetching user points: $e");
+    }
   }
 
   void _fetchUserData() async {
@@ -68,26 +122,14 @@ class _AccountPageState extends State<AccountPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Profile Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade800, Colors.green.shade400],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.shade400,
-                        blurRadius: 6,
-                        offset: Offset(0, 4)),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Profile Picture with a Soft Glow Effect
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: Colors.green.shade700,
+                    child: CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.green.shade200,
                       backgroundImage:
@@ -97,25 +139,27 @@ class _AccountPageState extends State<AccountPage> {
                               size: 50, color: Colors.white)
                           : null,
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _displayName,
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-                    const SizedBox(height: 5),
-                    const Text("🏆 65 pts",
-                        style: TextStyle(fontSize: 16, color: Colors.white70)),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _displayName,
+                    style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "🏆 $_userPoints pts",
+                    style: const TextStyle(fontSize: 20, color: Colors.black54),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 
-              // Unified Main Container
+              // Main Account Section
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -123,19 +167,22 @@ class _AccountPageState extends State<AccountPage> {
                     BoxShadow(
                         color: Colors.grey.shade300,
                         blurRadius: 6,
-                        offset: Offset(0, 4)),
+                        offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Column(
                   children: [
-                    _buildButton(Icons.campaign, "Challenges", '/challenges',
-                        Colors.green.shade700),
+                    _buildAnimatedButton(
+                        Icons.campaign, "Challenges", '/challenges'),
                     const SizedBox(height: 10),
-                    _buildButton(Icons.emoji_events, "Milestones",
-                        '/milestones', Colors.green.shade700),
+                    _buildAnimatedButton(
+                        Icons.emoji_events, "Milestones", '/milestones'),
+                    const SizedBox(height: 10),
+                    _buildAnimatedButton(
+                        Icons.leaderboard, "LeaderBoards", '/leaderboard'),
                     const SizedBox(height: 20),
 
-                    // Sub-container for Settings, About, Privacy, Logout
+                    // Settings Section
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -143,16 +190,18 @@ class _AccountPageState extends State<AccountPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .center, // Ensures content aligns to center
-                        mainAxisAlignment: MainAxisAlignment
-                            .center, // Centers items within column
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildSettingsOption("Settings",
+                          _buildSettingsOption("Settings", Icons.settings,
                               navigateToSettings: true),
-                          _buildSettingsOption("About", navigateToAbout: true),
-                          _buildSettingsOption("Privacy Policy"),
-                          _buildSettingsOption("Logout", isLogout: true),
+                          _buildSettingsOption("About", Icons.info,
+                              navigateToAbout: true),
+                          _buildSettingsOption(
+                              "User Support", Icons.support_agent,
+                              navigateToSupport: true),
+                          _buildSettingsOption("Logout", Icons.logout,
+                              isLogout: true),
                         ],
                       ),
                     ),
@@ -164,14 +213,23 @@ class _AccountPageState extends State<AccountPage> {
         ),
       ),
 
-      // QR Code Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/qr_scan');
+      // QR Code Floating Action Button with Hover Animation
+      floatingActionButton: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 300),
+        tween: Tween(begin: 1.0, end: 1.1),
+        builder: (context, scale, child) {
+          return Transform.scale(
+            scale: scale,
+            child: FloatingActionButton(
+              backgroundColor: Colors.green,
+              onPressed: () {
+                Navigator.pushNamed(context, '/qr_scan');
+              },
+              shape: const CircleBorder(),
+              child: const Icon(Icons.qr_code, color: Colors.white),
+            ),
+          );
         },
-        shape: const CircleBorder(),
-        child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
@@ -189,68 +247,74 @@ class _AccountPageState extends State<AccountPage> {
     });
   }
 
-  Widget _buildButton(IconData icon, String label, String route, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          minimumSize: const Size(double.infinity, 45),
-        ),
-        onPressed: () {
-          Navigator.pushNamed(context, route);
-        },
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(label,
-                style: const TextStyle(fontSize: 16, color: Colors.white)),
-          ],
-        ),
-      ),
+  // Animated Button with Scaling Effect
+  Widget _buildAnimatedButton(IconData icon, String label, String route) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      tween: Tween(begin: 1.0, end: 1.05),
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, route);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 10),
+                Text(label,
+                    style: const TextStyle(fontSize: 18, color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSettingsOption(String label,
+  Widget _buildSettingsOption(String label, IconData icon,
       {bool isLogout = false,
       bool navigateToSettings = false,
-      bool navigateToAbout = false}) {
-    return Center(
-      // Ensures horizontal centering
-      child: ListTile(
-        title: Text(
-          label,
-          textAlign:
-              TextAlign.center, // Ensures text is centered inside ListTile
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: isLogout ? Colors.red : Colors.black87,
-          ),
+      bool navigateToAbout = false,
+      bool navigateToSupport = false}) {
+    return ListTile(
+      leading: Icon(icon, color: isLogout ? Colors.red : Colors.green.shade800),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+          color: isLogout ? Colors.red : Colors.black87,
         ),
-        onTap: isLogout
-            ? _logout
-            : navigateToSettings
-                ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsPage()),
-                    ).then((_) => _fetchUserData()); // Refresh data on return
-                  }
-                : navigateToAbout
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => AboutPage()),
-                        ).then(
-                            (_) => _fetchUserData()); // Refresh data on return
-                      }
-                    : () {},
       ),
+      onTap: isLogout
+          ? _logout
+          : navigateToSettings
+              ? () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => SettingsPage()));
+                }
+              : navigateToAbout
+                  ? () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => AboutPage()));
+                    }
+                  : navigateToSupport
+                      ? () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => UserSupportPage()));
+                        }
+                      : () {},
     );
   }
 }
