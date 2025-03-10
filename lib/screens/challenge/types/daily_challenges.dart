@@ -21,54 +21,6 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
   void initState() {
     super.initState();
     _user = _auth.currentUser;
-    _checkForDailyReset();
-  }
-
-  /// Checks if it's a new day and resets daily challenges
-  void _checkForDailyReset() async {
-    if (_user == null) return;
-
-    DocumentSnapshot userDoc =
-        await _firestore.collection('users').doc(_user!.uid).get();
-    Timestamp? lastReset = userDoc.exists ? userDoc['lastReset'] : null;
-
-    DateTime now = DateTime.now();
-    DateTime lastResetDate = lastReset?.toDate() ?? DateTime(2000);
-
-    bool isNewDay = now.year > lastResetDate.year ||
-        now.month > lastResetDate.month ||
-        now.day > lastResetDate.day;
-
-    if (isNewDay) {
-      await _resetDailyChallenges();
-    }
-  }
-
-  /// Resets all daily challenges for the user
-  Future<void> _resetDailyChallenges() async {
-    if (_user == null) return;
-
-    WriteBatch batch = _firestore.batch();
-
-    QuerySnapshot userChallengesSnapshot = await _firestore
-        .collection('user_challenges')
-        .where('userID', isEqualTo: _user!.uid)
-        .where('frequency', isEqualTo: 'daily')
-        .get();
-
-    for (var doc in userChallengesSnapshot.docs) {
-      batch.update(doc.reference, {
-        'progress': 0,
-        'status': 'not_started',
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
-    }
-
-    batch.update(_firestore.collection('users').doc(_user!.uid), {
-      'lastReset': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
   }
 
   @override
@@ -118,24 +70,70 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
                     isCompleted = status == 'completed';
                   }
 
-                  return ListTile(
-                    title: Text(data['title']),
-                    subtitle: Text(data['description']),
-                    trailing: isCompleted
-                        ? const Text(
-                            "✅ Completed",
-                            style: TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold),
-                          )
-                        : ElevatedButton(
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15), // Rounded edges
+                    ),
+                    elevation: 4, // Adds shadow effect
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12), // Better spacing
+                      title: Text(
+                        data['title'],
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        data['description'],
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                      trailing: Builder(
+                        builder: (context) {
+                          if (userChallengeSnapshot.hasData &&
+                              userChallengeSnapshot.data!.exists) {
+                            var userChallengeData = userChallengeSnapshot.data!
+                                .data() as Map<String, dynamic>?;
+
+                            if (userChallengeData != null &&
+                                userChallengeData.containsKey('lastUpdated')) {
+                              Timestamp lastUpdated =
+                                  userChallengeData['lastUpdated'] as Timestamp;
+                              DateTime lastUpdatedDate = lastUpdated.toDate();
+                              DateTime now = DateTime.now();
+
+                              // If completed & lastUpdated is within 24 hours, show "Completed"
+                              if (status == 'completed' &&
+                                  now.difference(lastUpdatedDate).inHours <
+                                      24) {
+                                return const Chip(
+                                  label: Text(
+                                    "Completed",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.green,
+                                );
+                              }
+                            }
+                          }
+
+                          // If challenge is not completed or it's a new day, show "Start" button
+                          return ElevatedButton(
                             onPressed: () => _startChallenge(
                               challenge.id,
                               data['trackingMethod'],
                               data['requiredProgress'] ?? 1,
                             ),
                             child: const Text("Start"),
-                          ),
+                          );
+                        },
+                      ),
+                    ),
                   );
                 },
               );
@@ -164,7 +162,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
   }
 
   void _startChallenge(
-      String challengeID, String? trackingMethod, int? requiredProgress) {
+      String challengeID, String? trackingMethod, int? requiredProgress) async {
     if (_user == null) {
       debugPrint("Error: User is not logged in.");
       return;
@@ -176,9 +174,52 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
       requiredProgress = 1;
     }
 
-    debugPrint(
-        "Navigating to TrackingMethodsScreen with Challenge ID: $challengeID");
+    String userChallengeDocID = "${_user!.uid}_$challengeID";
+    DocumentReference userChallengeRef =
+        _firestore.collection('user_challenges').doc(userChallengeDocID);
 
+    DocumentSnapshot userChallengeSnapshot = await userChallengeRef.get();
+
+    if (userChallengeSnapshot.exists) {
+      var userChallengeData =
+          userChallengeSnapshot.data() as Map<String, dynamic>;
+
+      Timestamp lastUpdated =
+          userChallengeData['lastUpdated'] ?? Timestamp.now();
+      DateTime lastUpdatedDate = lastUpdated.toDate();
+      DateTime now = DateTime.now();
+
+      if (now.difference(lastUpdatedDate).inHours >= 24) {
+        // Reset challenge by creating a new document
+        await userChallengeRef.set({
+          'challengeID': challengeID,
+          'userID': _user!.uid,
+          'status': 'not_started', // Ensure status resets
+          'progress': 0,
+          'requiredProgress': requiredProgress,
+          'lastUpdated': Timestamp.now(),
+        });
+
+        debugPrint("Daily challenge reset with a new entry.");
+      }
+    } else {
+      // If challenge doesn't exist, create it for the first time
+      await userChallengeRef.set({
+        'challengeID': challengeID,
+        'userID': _user!.uid,
+        'status': 'not_started',
+        'progress': 0,
+        'requiredProgress': requiredProgress,
+        'lastUpdated': Timestamp.now(),
+      });
+
+      debugPrint("New daily challenge document created.");
+    }
+
+    // Refresh UI to reflect the reset challenge
+    setState(() {});
+
+    // Navigate to tracking methods screen
     Navigator.push(
       context,
       MaterialPageRoute(
