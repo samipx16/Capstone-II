@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/bottom_navbar.dart';
 
 class ChallengeScreen extends StatefulWidget {
@@ -9,9 +10,11 @@ class ChallengeScreen extends StatefulWidget {
 }
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
-  int _currentIndex = 1; // Set Challenges as active tab
+  int _currentIndex = 1; // Active tab index
   final TextEditingController _searchController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _filteredChallenges = [];
+  bool _isSearching = false;
 
   final List<Map<String, dynamic>> challengeTypes = [
     {
@@ -21,14 +24,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.calendar_today,
       "route": "/dailyChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Go Plastic-Free Self-report avoiding plastic for a whole day.",
-        "Recycle 1 Item Scan QR codes at a recycling bin.",
-        "Refill Your Bottle : Refill your water bottle or cup at the refill stations around campus",
-        "Public Transport : Report yourself using public transport",
-        "Turn-off Lights : Self-report turning off all unnecessary lights",
-        "Walk/Bike to Class : Log your walk/bike ride to class",
-      ]
     },
     {
       "title": "Weekly Challenges",
@@ -36,13 +31,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.date_range,
       "route": "/weeklyChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Avoid Plastics : Avoid single use plastics for a week",
-        "Eco-Friendly Purchase : Report an eco-friendly purchase you've made within the week",
-        "Local Cleanup Effort : Participate in a local cleanup effort",
-        "Meatless Days : Go meatless for at least 3 days of the week",
-        "Litter Cleanup : Pick up at least 10 pieces of litter that you see",
-      ]
     },
     {
       "title": "One-time Challenges",
@@ -51,20 +39,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.verified,
       "route": "/oneTimeChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Plant a Tree : Upload a photo of the tree you planted.",
-        "Start a Home Garden : Start a home garden",
-        "Donate Clothes : Donate your old clothes",
-        "Make a Compost Bin : Set up a compost bin",
-        "Go to a Recycling Event: Attend a recycling workshop or event in your area"
-      ]
     }
   ];
 
   @override
   void initState() {
     super.initState();
-    _filteredChallenges = List.from(challengeTypes);
     _searchController.addListener(_filterChallenges);
   }
 
@@ -75,12 +55,41 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   void _filterChallenges() {
-    String query = _searchController.text.toLowerCase();
+    String query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      setState(() {
+        _filteredChallenges = [];
+        _isSearching = false;
+      });
+    } else {
+      _searchChallengesFromFirestore(query);
+    }
+  }
+
+  /// Fetches challenges from Firestore where either `title` or `description` contains the query
+  void _searchChallengesFromFirestore(String query) async {
+    QuerySnapshot querySnapshot =
+        await _firestore.collection('challenges').get();
+
+    List<Map<String, dynamic>> searchResults = querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .where((challenge) {
+      String title = challenge['title'].toString().toLowerCase();
+      String description = challenge['description'].toString().toLowerCase();
+      return title.contains(query) || description.contains(query);
+    }).toList();
+
     setState(() {
-      _filteredChallenges = challengeTypes.where((category) {
-        return category["title"].toLowerCase().contains(query) ||
-            category["description"].toLowerCase().contains(query);
+      _filteredChallenges = searchResults.map((challenge) {
+        return {
+          "title": challenge["title"],
+          "description": challenge["description"],
+          "icon": Icons.assignment, // Default icon
+          "route": "/challengeDetails", // Example route
+          "image": "assets/task-img.png",
+        };
       }).toList();
+      _isSearching = true;
     });
   }
 
@@ -111,6 +120,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
               child: TextField(
                 controller: _searchController,
+                onChanged: (value) => _filterChallenges(),
                 decoration: InputDecoration(
                   hintText: "Search challenges...",
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -121,21 +131,38 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Challenge Category Blocks
+            // Challenge Display
             Expanded(
-              child: _filteredChallenges.isEmpty
-                  ? const Center(child: Text("No matching challenges found."))
+              child: _isSearching
+                  ? (_filteredChallenges.isEmpty
+                      ? const Center(
+                          child: Text("No matching challenges found."))
+                      : ListView.builder(
+                          itemCount: _filteredChallenges.length,
+                          itemBuilder: (context, index) {
+                            final challenge = _filteredChallenges[index];
+                            return _buildChallengeCategory(
+                              title: challenge["title"],
+                              description: challenge["description"],
+                              icon: challenge["icon"],
+                              route: challenge["route"],
+                              imagePath: challenge["image"],
+                              taskCount:
+                                  0, // Firestore data may not have task count
+                            );
+                          },
+                        ))
                   : ListView.builder(
-                      itemCount: _filteredChallenges.length,
+                      itemCount: challengeTypes.length,
                       itemBuilder: (context, index) {
-                        final category = _filteredChallenges[index];
+                        final category = challengeTypes[index];
                         return _buildChallengeCategory(
                           title: category["title"],
                           description: category["description"],
                           icon: category["icon"],
                           route: category["route"],
                           imagePath: category["image"],
-                          taskCount: (category["challenges"] as List).length,
+                          taskCount: 0, // Default value
                         );
                       },
                     ),
@@ -144,7 +171,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         ),
       ),
 
-      // QR Code Floating Action Button
+      // Floating Action Button (QR Code Scanner)
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () {
@@ -198,7 +225,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
               const SizedBox(width: 16),
 
-              // Expanded Title, Description & Task Count
+              // Expanded Title & Description
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,41 +242,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       description,
                       style:
                           const TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Task Count Row (Green Box + "Available Task" Text)
-                    Row(
-                      children: [
-                        // Green rounded task count
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            "$taskCount",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // "Available Task" text
-                        const Text(
-                          "Task Count",
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),

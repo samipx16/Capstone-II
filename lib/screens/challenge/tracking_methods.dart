@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math'; // For random facts
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart'; // Needed for kIsWeb
@@ -23,12 +24,22 @@ class TrackingMethodsScreen extends StatefulWidget {
   _TrackingMethodsScreenState createState() => _TrackingMethodsScreenState();
 }
 
-class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
+class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late User? _user;
   int _progress = 0;
+  bool _isUpdating = false; // Prevent multiple clicks
   File? _image;
+  String? _randomFact;
+  final List<String> _sustainabilityFacts = [
+    "Recycling one aluminum can saves enough energy to run a TV for 3 hours!",
+    "Turning off your faucet while brushing your teeth can save 8 gallons of water per day.",
+    "Plastic takes over 400 years to degrade in landfills.",
+    "One tree can absorb as much carbon in a year as a car produces while driving 26,000 miles!",
+    "LED bulbs use at least 75% less energy and last 25 times longer than traditional bulbs.",
+  ];
 
   @override
   void initState() {
@@ -47,18 +58,17 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
 
     if (doc.exists) {
       var data = doc.data() as Map<String, dynamic>;
-
       setState(() {
         _progress = data['progress'] ?? 0;
       });
-    } else {
-      debugPrint(
-          "⚠️ No challenge progress found in Firestore for ${widget.challengeID}");
     }
   }
 
   Future<void> _updateChallengeProgress(int newProgress) async {
-    if (_user == null) return;
+    if (_user == null || _isUpdating) return;
+    setState(() {
+      _isUpdating = true;
+    });
 
     bool isCompleted = newProgress >= widget.requiredProgress;
     String newStatus = isCompleted ? 'completed' : 'in_progress';
@@ -68,45 +78,23 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         .doc("${_user!.uid}_${widget.challengeID}");
 
     try {
-      // Check if the document exists first
-      final docSnapshot = await docRef.get();
-      if (docSnapshot.exists) {
-        // Use update if the document already exists
-        await docRef.update({
-          'status': newStatus,
-          'progress': newProgress,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Create the document if it does not exist
-        await docRef.set({
-          'userID': _user!.uid,
-          'challengeID': widget.challengeID,
-          'status': newStatus,
-          'progress': newProgress,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      }
-
-      final updatedDoc = await docRef.get();
-      debugPrint("✅ Updated Firestore document data: ${updatedDoc.data()}");
+      await docRef.set({
+        'status': newStatus,
+        'progress': newProgress,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       setState(() {
         _progress = newProgress;
+        _randomFact =
+            _sustainabilityFacts[Random().nextInt(_sustainabilityFacts.length)];
+        _isUpdating = false;
       });
-
-      debugPrint("✅ Firestore update successful!");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              isCompleted ? "🎉 Challenge Completed!" : "📈 Progress Updated"),
-        ),
-      );
     } catch (e) {
       debugPrint("❌ Firestore update failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Update failed: $e")),
-      );
+      setState(() {
+        _isUpdating = false;
+      });
     }
   }
 
@@ -387,9 +375,41 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Progress: $_progress / ${widget.requiredProgress}"),
             const SizedBox(height: 20),
-            _buildTrackingUI(),
+            Text("Progress: $_progress / ${widget.requiredProgress}",
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: LinearProgressIndicator(
+                value: _progress / widget.requiredProgress,
+                backgroundColor: Colors.grey[300],
+                color: Colors.green,
+                minHeight: 10,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _isUpdating || _progress >= widget.requiredProgress
+                  ? null
+                  : () => _updateChallengeProgress(_progress + 1),
+              child: _isUpdating
+                  ? const CircularProgressIndicator()
+                  : const Text("Log Progress"),
+            ),
+            if (_randomFact != null) ...[
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text(
+                  "🌱 Did You Know? $_randomFact",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 16, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ]
           ],
         ),
       ),
