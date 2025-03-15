@@ -370,7 +370,9 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Track Challenge"), backgroundColor: Colors.green),
+        title: const Text("Track Challenge"),
+        backgroundColor: Colors.green,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -390,14 +392,10 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isUpdating || _progress >= widget.requiredProgress
-                  ? null
-                  : () => _updateChallengeProgress(_progress + 1),
-              child: _isUpdating
-                  ? const CircularProgressIndicator()
-                  : const Text("Log Progress"),
-            ),
+
+            // 🔥 Fix: Replace the generic button with the correct tracking method UI
+            _buildTrackingUI(),
+
             if (_randomFact != null) ...[
               const SizedBox(height: 20),
               Padding(
