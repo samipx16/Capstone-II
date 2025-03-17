@@ -10,7 +10,8 @@ class MapScreen extends StatefulWidget {
 
 class MapScreenState extends State<MapScreen> {
   late GoogleMapController mapController;
-  final LatLng _initialPosition = const LatLng(32.7304, -97.1152); // UTA default location
+  final LatLng _initialPosition =
+      const LatLng(32.7304, -97.1152); // UTA default location
 
   void _onMapCreated(GoogleMapController controller) {
     setState(() {
@@ -30,15 +31,18 @@ class MapScreenState extends State<MapScreen> {
       appBar: AppBar(title: const Text("Closest Recycle Bin")),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(
-          target: _initialPosition,
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(33.2107, -97.1473),
           zoom: 15.0,
         ),
         markers: {
           const Marker(
             markerId: MarkerId("recycle_bin_1"),
-            position: LatLng(32.7320, -97.1147), // Example bin location
-            infoWindow: InfoWindow(title: "Nearest Recycle Bin"),
+            position: LatLng(33.2107, -97.1473),
+            infoWindow: InfoWindow(
+              title: "UNT Union Test Recycle Bin",
+              snippet: "♻️ Bin Size: Large | Accepts: Plastic (Separate)",
+            ),
           ),
         },
       ),
