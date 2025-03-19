@@ -48,7 +48,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // Prevents UI from getting cut off by keyboard
+      resizeToAvoidBottomInset: false,
       body: Container(
         color: Colors.white,
         child: Column(
@@ -97,18 +97,18 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                        onPressed: () => _signIn(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF00853E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                          onPressed: () => _signIn(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF00853E),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 15),
                           ),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
+                          child: Text("SIGN IN",
+                              style: TextStyle(color: Colors.white)),
                         ),
-                        child: Text("SIGN IN",
-                            style: TextStyle(color: Colors.white)),
-                      ),
                       ),
                       TextButton(
                           onPressed: () {},
@@ -120,7 +120,8 @@ class LoginScreen extends StatelessWidget {
                           Navigator.pushNamed(context, '/register');
                         },
                         child: Text("Create an Account",
-                            style: TextStyle(color: Colors.green, fontSize: 16)),
+                            style:
+                                TextStyle(color: Colors.green, fontSize: 16)),
                       ),
                     ],
                   ),
@@ -129,10 +130,12 @@ class LoginScreen extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.bottomCenter,
-              child: Image.asset(
-                'assets/trees.png',
-                width: double.infinity,
-                fit: BoxFit.cover,
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/trees.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ],
