@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/bottom_navbar.dart';
+import '../challenge/tracking_methods.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -8,6 +10,8 @@ class ChallengeScreen extends StatefulWidget {
   @override
   _ChallengeScreenState createState() => _ChallengeScreenState();
 }
+
+final FirebaseAuth _auth = FirebaseAuth.instance;
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
   int _currentIndex = 1; // Active tab index
@@ -56,39 +60,65 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   void _filterChallenges() {
     String query = _searchController.text.trim().toLowerCase();
+
     if (query.isEmpty) {
+      // ✅ If search bar is empty, show default categories
       setState(() {
         _filteredChallenges = [];
         _isSearching = false;
       });
     } else {
+      // ✅ Perform search if there is text
       _searchChallengesFromFirestore(query);
     }
   }
 
   /// Fetches challenges from Firestore where either `title` or `description` contains the query
   void _searchChallengesFromFirestore(String query) async {
-    QuerySnapshot querySnapshot =
+    if (_auth.currentUser == null) return;
+    String userId = _auth.currentUser!.uid;
+
+    QuerySnapshot challengeSnapshot =
         await _firestore.collection('challenges').get();
 
-    List<Map<String, dynamic>> searchResults = querySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
-        .where((challenge) {
-      String title = challenge['title'].toString().toLowerCase();
-      String description = challenge['description'].toString().toLowerCase();
-      return title.contains(query) || description.contains(query);
-    }).toList();
+    List<Map<String, dynamic>> searchResults = [];
+
+    for (var doc in challengeSnapshot.docs) {
+      Map<String, dynamic> challengeData = doc.data() as Map<String, dynamic>;
+      String challengeId = doc.id;
+
+      // Fetch the challenge's status from user_challenges
+      DocumentSnapshot userChallengeSnapshot = await _firestore
+          .collection('user_challenges')
+          .doc("${userId}_$challengeId")
+          .get();
+
+      String challengeStatus = "not_started"; // Default status
+      if (userChallengeSnapshot.exists) {
+        Map<String, dynamic> userChallengeData =
+            userChallengeSnapshot.data() as Map<String, dynamic>;
+        challengeStatus = userChallengeData['status'] ?? "not_started";
+      }
+
+      if (challengeData["title"].toLowerCase().contains(query) ||
+          challengeData["description"].toLowerCase().contains(query)) {
+        searchResults.add({
+          "id": challengeId,
+          "title": challengeData["title"],
+          "description": challengeData["description"],
+          "icon": Icons.assignment, // Default icon
+          "image": "assets/task-img.png",
+          "status": challengeStatus, // ✅ Store challenge status
+          "trackingMethod": challengeData["trackingMethod"] ?? "manual",
+          "requiredProgress": challengeData.containsKey("requiredProgress")
+              ? challengeData["requiredProgress"] as int
+              : 1, // Default value
+        });
+      }
+    }
 
     setState(() {
-      _filteredChallenges = searchResults.map((challenge) {
-        return {
-          "title": challenge["title"],
-          "description": challenge["description"],
-          "icon": Icons.assignment, // Default icon
-          "route": "/challengeDetails", // Example route
-          "image": "assets/task-img.png",
-        };
-      }).toList();
+      _filteredChallenges = searchResults;
       _isSearching = true;
     });
   }
@@ -145,14 +175,20 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                               title: challenge["title"],
                               description: challenge["description"],
                               icon: challenge["icon"],
-                              route: challenge["route"],
                               imagePath: challenge["image"],
-                              taskCount:
-                                  0, // Firestore data may not have task count
+                              challengeID:
+                                  challenge["id"], // ✅ Pass challenge ID
+                              trackingMethod: challenge[
+                                  "trackingMethod"], // ✅ Pass tracking method
+                              requiredProgress: challenge[
+                                  "requiredProgress"], // ✅ Pass required progress
+                              status: challenge[
+                                  "status"], // ✅ Pass challenge status
                             );
                           },
                         ))
                   : ListView.builder(
+                      // ✅ Show Daily, Weekly, and One-time Challenges when NOT searching
                       itemCount: challengeTypes.length,
                       itemBuilder: (context, index) {
                         final category = challengeTypes[index];
@@ -160,9 +196,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                           title: category["title"],
                           description: category["description"],
                           icon: category["icon"],
-                          route: category["route"],
                           imagePath: category["image"],
-                          taskCount: 0, // Default value
+                          challengeID: "", // Default empty
+                          trackingMethod: "", // Default empty
+                          requiredProgress: 1, // Default value
+                          status: "not_started", // Default status
                         );
                       },
                     ),
@@ -200,13 +238,47 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     required String title,
     required String description,
     required IconData icon,
-    required String route,
     required String imagePath,
-    required int taskCount,
+    required String challengeID,
+    required String trackingMethod,
+    required int requiredProgress,
+    required String status, // ✅ Added challenge status
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, route);
+        // ✅ Check if this is a category (Daily, Weekly, One-time)
+        if (challengeID.isEmpty) {
+          // Navigate to the respective challenge screen
+          if (title.contains("Daily")) {
+            Navigator.pushNamed(context, "/dailyChallenges");
+          } else if (title.contains("Weekly")) {
+            Navigator.pushNamed(context, "/weeklyChallenges");
+          } else if (title.contains("One-time")) {
+            Navigator.pushNamed(context, "/oneTimeChallenges");
+          }
+        } else {
+          // ✅ Normal challenge behavior
+          if (status == 'completed') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("This challenge is already completed."),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // ✅ Navigate to Tracking Methods Screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TrackingMethodsScreen(
+                  challengeID: challengeID,
+                  trackingMethod: trackingMethod,
+                  requiredProgress: requiredProgress,
+                ),
+              ),
+            );
+          }
+        }
       },
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -247,16 +319,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 ),
               ),
 
-              // Image on the right
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  imagePath,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              // ✅ Show "Completed" status for searched challenges
+              challengeID.isNotEmpty && status == "completed"
+                  ? const Chip(
+                      label: Text(
+                        "Completed",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                    )
+                  : const SizedBox(), // Otherwise, show nothing
             ],
           ),
         ),
