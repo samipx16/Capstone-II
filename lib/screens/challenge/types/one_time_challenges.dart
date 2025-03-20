@@ -92,24 +92,52 @@ class _OneTimeChallengesScreenState extends State<OneTimeChallengesScreen> {
                     isCompleted = status == 'completed';
                   }
 
-                  return ListTile(
-                    title: Text(data['title']),
-                    subtitle: Text(data['description']),
-                    trailing: isCompleted
-                        ? const Text(
-                            "✅ Completed",
-                            style: TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold),
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _startChallenge(
-                              challenge.id,
-                              data['trackingMethod'],
-                              data['requiredProgress'] ?? 1,
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15), // Rounded edges
+                    ),
+                    elevation: 4, // Adds shadow effect
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12), // Better spacing
+                      title: Text(
+                        data['title'],
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        data['description'],
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                      trailing: isCompleted
+                          ? const Chip(
+                              label: Text(
+                                "Completed",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              backgroundColor: Colors.green,
+                            )
+                          : ElevatedButton(
+                              onPressed: () => _startChallenge(
+                                challenge.id,
+                                data['trackingMethod'],
+                                data['requiredProgress'] ?? 1,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                textStyle: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                              child: const Text("Start"),
                             ),
-                            child: const Text("Start"),
-                          ),
+                    ),
                   );
                 },
               );

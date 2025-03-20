@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/bottom_navbar.dart';
+import '../challenge/tracking_methods.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChallengeScreen extends StatefulWidget {
   const ChallengeScreen({super.key});
@@ -8,10 +11,14 @@ class ChallengeScreen extends StatefulWidget {
   _ChallengeScreenState createState() => _ChallengeScreenState();
 }
 
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
 class _ChallengeScreenState extends State<ChallengeScreen> {
-  int _currentIndex = 1; // Set Challenges as active tab
+  int _currentIndex = 1; // Active tab index
   final TextEditingController _searchController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _filteredChallenges = [];
+  bool _isSearching = false;
 
   final List<Map<String, dynamic>> challengeTypes = [
     {
@@ -21,14 +28,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.calendar_today,
       "route": "/dailyChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Go Plastic-Free Self-report avoiding plastic for a whole day.",
-        "Recycle 1 Item Scan QR codes at a recycling bin.",
-        "Refill Your Bottle : Refill your water bottle or cup at the refill stations around campus",
-        "Public Transport : Report yourself using public transport",
-        "Turn-off Lights : Self-report turning off all unnecessary lights",
-        "Walk/Bike to Class : Log your walk/bike ride to class",
-      ]
     },
     {
       "title": "Weekly Challenges",
@@ -36,13 +35,6 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.date_range,
       "route": "/weeklyChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Avoid Plastics : Avoid single use plastics for a week",
-        "Eco-Friendly Purchase : Report an eco-friendly purchase you've made within the week",
-        "Local Cleanup Effort : Participate in a local cleanup effort",
-        "Meatless Days : Go meatless for at least 3 days of the week",
-        "Litter Cleanup : Pick up at least 10 pieces of litter that you see",
-      ]
     },
     {
       "title": "One-time Challenges",
@@ -51,20 +43,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       "icon": Icons.verified,
       "route": "/oneTimeChallenges",
       "image": "assets/task-img.png",
-      "challenges": [
-        "Plant a Tree : Upload a photo of the tree you planted.",
-        "Start a Home Garden : Start a home garden",
-        "Donate Clothes : Donate your old clothes",
-        "Make a Compost Bin : Set up a compost bin",
-        "Go to a Recycling Event: Attend a recycling workshop or event in your area"
-      ]
     }
   ];
 
   @override
   void initState() {
     super.initState();
-    _filteredChallenges = List.from(challengeTypes);
     _searchController.addListener(_filterChallenges);
   }
 
@@ -75,12 +59,67 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   void _filterChallenges() {
-    String query = _searchController.text.toLowerCase();
+    String query = _searchController.text.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      // ✅ If search bar is empty, show default categories
+      setState(() {
+        _filteredChallenges = [];
+        _isSearching = false;
+      });
+    } else {
+      // ✅ Perform search if there is text
+      _searchChallengesFromFirestore(query);
+    }
+  }
+
+  /// Fetches challenges from Firestore where either `title` or `description` contains the query
+  void _searchChallengesFromFirestore(String query) async {
+    if (_auth.currentUser == null) return;
+    String userId = _auth.currentUser!.uid;
+
+    QuerySnapshot challengeSnapshot =
+        await _firestore.collection('challenges').get();
+
+    List<Map<String, dynamic>> searchResults = [];
+
+    for (var doc in challengeSnapshot.docs) {
+      Map<String, dynamic> challengeData = doc.data() as Map<String, dynamic>;
+      String challengeId = doc.id;
+
+      // Fetch the challenge's status from user_challenges
+      DocumentSnapshot userChallengeSnapshot = await _firestore
+          .collection('user_challenges')
+          .doc("${userId}_$challengeId")
+          .get();
+
+      String challengeStatus = "not_started"; // Default status
+      if (userChallengeSnapshot.exists) {
+        Map<String, dynamic> userChallengeData =
+            userChallengeSnapshot.data() as Map<String, dynamic>;
+        challengeStatus = userChallengeData['status'] ?? "not_started";
+      }
+
+      if (challengeData["title"].toLowerCase().contains(query) ||
+          challengeData["description"].toLowerCase().contains(query)) {
+        searchResults.add({
+          "id": challengeId,
+          "title": challengeData["title"],
+          "description": challengeData["description"],
+          "icon": Icons.assignment, // Default icon
+          "image": "assets/task-img.png",
+          "status": challengeStatus, // ✅ Store challenge status
+          "trackingMethod": challengeData["trackingMethod"] ?? "manual",
+          "requiredProgress": challengeData.containsKey("requiredProgress")
+              ? challengeData["requiredProgress"] as int
+              : 1, // Default value
+        });
+      }
+    }
+
     setState(() {
-      _filteredChallenges = challengeTypes.where((category) {
-        return category["title"].toLowerCase().contains(query) ||
-            category["description"].toLowerCase().contains(query);
-      }).toList();
+      _filteredChallenges = searchResults;
+      _isSearching = true;
     });
   }
 
@@ -111,6 +150,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
               child: TextField(
                 controller: _searchController,
+                onChanged: (value) => _filterChallenges(),
                 decoration: InputDecoration(
                   hintText: "Search challenges...",
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -121,21 +161,46 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Challenge Category Blocks
+            // Challenge Display
             Expanded(
-              child: _filteredChallenges.isEmpty
-                  ? const Center(child: Text("No matching challenges found."))
+              child: _isSearching
+                  ? (_filteredChallenges.isEmpty
+                      ? const Center(
+                          child: Text("No matching challenges found."))
+                      : ListView.builder(
+                          itemCount: _filteredChallenges.length,
+                          itemBuilder: (context, index) {
+                            final challenge = _filteredChallenges[index];
+                            return _buildChallengeCategory(
+                              title: challenge["title"],
+                              description: challenge["description"],
+                              icon: challenge["icon"],
+                              imagePath: challenge["image"],
+                              challengeID:
+                                  challenge["id"], // ✅ Pass challenge ID
+                              trackingMethod: challenge[
+                                  "trackingMethod"], // ✅ Pass tracking method
+                              requiredProgress: challenge[
+                                  "requiredProgress"], // ✅ Pass required progress
+                              status: challenge[
+                                  "status"], // ✅ Pass challenge status
+                            );
+                          },
+                        ))
                   : ListView.builder(
-                      itemCount: _filteredChallenges.length,
+                      // ✅ Show Daily, Weekly, and One-time Challenges when NOT searching
+                      itemCount: challengeTypes.length,
                       itemBuilder: (context, index) {
-                        final category = _filteredChallenges[index];
+                        final category = challengeTypes[index];
                         return _buildChallengeCategory(
                           title: category["title"],
                           description: category["description"],
                           icon: category["icon"],
-                          route: category["route"],
                           imagePath: category["image"],
-                          taskCount: (category["challenges"] as List).length,
+                          challengeID: "", // Default empty
+                          trackingMethod: "", // Default empty
+                          requiredProgress: 1, // Default value
+                          status: "not_started", // Default status
                         );
                       },
                     ),
@@ -144,7 +209,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         ),
       ),
 
-      // QR Code Floating Action Button
+      // Floating Action Button (QR Code Scanner)
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () {
@@ -173,13 +238,47 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     required String title,
     required String description,
     required IconData icon,
-    required String route,
     required String imagePath,
-    required int taskCount,
+    required String challengeID,
+    required String trackingMethod,
+    required int requiredProgress,
+    required String status, // ✅ Added challenge status
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, route);
+        // ✅ Check if this is a category (Daily, Weekly, One-time)
+        if (challengeID.isEmpty) {
+          // Navigate to the respective challenge screen
+          if (title.contains("Daily")) {
+            Navigator.pushNamed(context, "/dailyChallenges");
+          } else if (title.contains("Weekly")) {
+            Navigator.pushNamed(context, "/weeklyChallenges");
+          } else if (title.contains("One-time")) {
+            Navigator.pushNamed(context, "/oneTimeChallenges");
+          }
+        } else {
+          // ✅ Normal challenge behavior
+          if (status == 'completed') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("This challenge is already completed."),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // ✅ Navigate to Tracking Methods Screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TrackingMethodsScreen(
+                  challengeID: challengeID,
+                  trackingMethod: trackingMethod,
+                  requiredProgress: requiredProgress,
+                ),
+              ),
+            );
+          }
+        }
       },
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -198,7 +297,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
               const SizedBox(width: 16),
 
-              // Expanded Title, Description & Task Count
+              // Expanded Title & Description
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,55 +315,23 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       style:
                           const TextStyle(fontSize: 14, color: Colors.black54),
                     ),
-                    const SizedBox(height: 6),
-
-                    // Task Count Row (Green Box + "Available Task" Text)
-                    Row(
-                      children: [
-                        // Green rounded task count
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            "$taskCount",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // "Available Task" text
-                        const Text(
-                          "Task Count",
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
 
-              // Image on the right
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  imagePath,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                ),
-              ),
+              // ✅ Show "Completed" status for searched challenges
+              challengeID.isNotEmpty && status == "completed"
+                  ? const Chip(
+                      label: Text(
+                        "Completed",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                    )
+                  : const SizedBox(), // Otherwise, show nothing
             ],
           ),
         ),
