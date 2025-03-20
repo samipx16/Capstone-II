@@ -78,13 +78,25 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         .doc("${_user!.uid}_${widget.challengeID}");
 
     try {
+      // Fetch existing document to check for `completedChallengesCount`
+      DocumentSnapshot doc = await docRef.get();
+      int existingCompletedCount = 0;
+
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        existingCompletedCount = data['completedChallengesCount'] ?? 0;
+      }
+
       await docRef.set({
         'status': newStatus,
         'progress': newProgress,
         'lastUpdated': FieldValue.serverTimestamp(),
+        'completedChallengesCount': isCompleted
+            ? existingCompletedCount + 1
+            : existingCompletedCount, // ✅ Increment count only when completed
       }, SetOptions(merge: true));
 
-      // ✅ If the challenge is completed, update the lifetime points
+      //  If the challenge is completed, update lifetime points
       if (isCompleted) {
         await _updateLifetimePoints();
       }
@@ -109,7 +121,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         _firestore.collection('challenges').doc(widget.challengeID);
 
     try {
-      // ✅ Fetch challenge points from the challenges collection
+      //  Fetch challenge points from the challenges collection
       DocumentSnapshot challengeDoc = await challengeDocRef.get();
       int challengePoints = 10; // Default points if not specified
 
@@ -119,7 +131,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
             10; // Use the stored points or default to 10
       }
 
-      // ✅ Fetch the user's current lifetime points
+      // Fetch the user's current lifetime points
       DocumentSnapshot userDoc = await userDocRef.get();
       int currentLifetimePoints = 0;
 
@@ -134,7 +146,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
       }, SetOptions(merge: true));
 
       debugPrint(
-          "✅ Lifetime points updated: ${currentLifetimePoints + challengePoints}");
+          " Lifetime points updated: ${currentLifetimePoints + challengePoints}");
     } catch (e) {
       debugPrint("❌ Failed to update lifetime points: $e");
     }
@@ -302,7 +314,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         debugPrint(
             "✅ QR Code Matched: $qrCode - ${binDoc['bin name']} at ${binDoc['location']}");
 
-        // ✅ Call Firestore update
+        // Call Firestore update
         await _updateChallengeProgress(_progress + 1);
 
         ScaffoldMessenger.of(context).showSnackBar(

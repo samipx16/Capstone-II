@@ -180,43 +180,27 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen> {
 
     DocumentSnapshot userChallengeSnapshot = await userChallengeRef.get();
 
+    int existingCompletedCount = 0;
     if (userChallengeSnapshot.exists) {
       var userChallengeData =
           userChallengeSnapshot.data() as Map<String, dynamic>;
-
-      Timestamp lastUpdated =
-          userChallengeData['lastUpdated'] ?? Timestamp.now();
-      DateTime lastUpdatedDate = lastUpdated.toDate();
-      DateTime now = DateTime.now();
-
-      if (now.difference(lastUpdatedDate).inHours >= 24) {
-        // Reset challenge by creating a new document
-        await userChallengeRef.set({
-          'challengeID': challengeID,
-          'userID': _user!.uid,
-          'status': 'not_started', // Ensure status resets
-          'progress': 0,
-          'requiredProgress': requiredProgress,
-          'lastUpdated': Timestamp.now(),
-        });
-
-        debugPrint("Daily challenge reset with a new entry.");
-      }
-    } else {
-      // If challenge doesn't exist, create it for the first time
-      await userChallengeRef.set({
-        'challengeID': challengeID,
-        'userID': _user!.uid,
-        'status': 'not_started',
-        'progress': 0,
-        'requiredProgress': requiredProgress,
-        'lastUpdated': Timestamp.now(),
-      });
-
-      debugPrint("New daily challenge document created.");
+      existingCompletedCount =
+          userChallengeData['completedChallengesCount'] ?? 0;
     }
 
-    // Refresh UI to reflect the reset challenge
+    await userChallengeRef.set({
+      'challengeID': challengeID,
+      'userID': _user!.uid,
+      'status': 'not_started', // Ensure status resets
+      'progress': 0,
+      'requiredProgress': requiredProgress,
+      'lastUpdated': Timestamp.now(),
+      'completedChallengesCount':
+          existingCompletedCount, // Keep previous completions
+    }, SetOptions(merge: true));
+
+    debugPrint("Daily challenge reset while keeping completed count.");
+
     setState(() {});
 
     // Navigate to tracking methods screen
