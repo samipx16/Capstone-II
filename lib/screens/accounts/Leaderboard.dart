@@ -22,72 +22,29 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
   Future<void> _fetchLeaderboardData() async {
     try {
-      Map<String, int> userScores = {};
-      Map<String, String> userNames = {};
-      Map<String, String> userPhotos = {};
+      QuerySnapshot usersSnapshot = await _firestore
+          .collection('users')
+          .orderBy('lifetimePoints', descending: true)
+          .limit(50) // Limit to top 50 users for performance
+          .get();
 
-      QuerySnapshot usersSnapshot = await _firestore.collection('users').get();
-      for (var userDoc in usersSnapshot.docs) {
-        String userId = userDoc.id;
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
-
-        if (userData != null) {
-          String name = userData['name'] ?? 'Unknown';
-          String photoUrl = userData['photoURL'] ?? '';
-          userNames[userId] = name;
-          userPhotos[userId] = photoUrl;
-          userScores[userId] = 0;
-        }
-      }
-
-      QuerySnapshot userChallengesSnapshot =
-          await _firestore.collection('user_challenges').get();
-
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
-        if (challengeData == null) continue;
-
-        String? userId = challengeData['userID'];
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-        String status = challengeData['status'] ?? '';
-
-        if (userId == null || challengeId == null) continue;
-
-        if (status == 'completed' && userScores.containsKey(userId)) {
-          DocumentSnapshot challengeSnapshot =
-              await _firestore.collection('challenges').doc(challengeId).get();
-          Map<String, dynamic>? challengeInfo =
-              challengeSnapshot.data() as Map<String, dynamic>?;
-
-          if (challengeInfo != null) {
-            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
-            userScores[userId] =
-                (userScores[userId] ?? 0) + (progress * points);
-          }
-        }
-      }
-
-      List<Map<String, dynamic>> sortedLeaderboard = userScores.entries
-          .map((entry) => {
-                'userId': entry.key,
-                'name': userNames[entry.key] ?? "Unknown",
-                'photoURL': userPhotos[entry.key] ?? "",
-                'score': entry.value ?? 0,
-              })
-          .toList();
-
-      sortedLeaderboard
-          .sort((a, b) => (b['score'] ?? 0).compareTo(a['score'] ?? 0));
+      List<Map<String, dynamic>> sortedLeaderboard =
+          usersSnapshot.docs.map((doc) {
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+        return {
+          'userId': doc.id,
+          'name': userData['name'] ?? 'Unknown',
+          'photoURL': userData['photoURL'] ?? '',
+          'score': userData['lifetimePoints'] ?? 0,
+        };
+      }).toList();
 
       setState(() {
         _leaderboard = sortedLeaderboard;
         _isLoading = false;
       });
     } catch (e) {
-      print("Error fetching leaderboard data: $e");
+      debugPrint("❌ Error fetching leaderboard data: $e");
       setState(() {
         _isLoading = false;
       });
@@ -97,14 +54,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Light background
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "🏆 Leaderboard ",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          "🏆 Leaderboard",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green,
       ),
@@ -130,12 +84,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                           hintText: "Search Player",
                           hintStyle: const TextStyle(color: Colors.black54),
                           filled: true,
-                          fillColor: Colors
-                              .grey.shade200, // Light background for search bar
+                          fillColor: Colors.grey.shade200,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide:
-                                BorderSide.none, // Remove border outline
+                            borderSide: BorderSide.none,
                           ),
                           prefixIcon:
                               const Icon(Icons.search, color: Colors.black54),
@@ -173,15 +125,12 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
     return Column(
       children: [
-        // First Place at the top
         _buildPodiumSpot(_leaderboard[0], 1, Colors.amber, 80),
-
-        // Second and Third Place below in a row
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildPodiumSpot(_leaderboard[1], 2, Colors.grey, 60),
-            const SizedBox(width: 40), // Space between 2nd and 3rd
+            const SizedBox(width: 40),
             _buildPodiumSpot(_leaderboard[2], 3, Colors.brown, 60),
           ],
         ),
@@ -194,7 +143,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(4), // Creates the ring effect
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
@@ -202,18 +151,17 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   ? Colors.amber
                   : (rank == 2)
                       ? Colors.grey
-                      : Colors.brown, // Gold, Silver, Bronze
-              width: 6, // Thickness of the ring
+                      : Colors.brown,
+              width: 6,
             ),
           ),
           child: CircleAvatar(
-            radius: size - 16, // Reduce profile pic size slightly
+            radius: size - 16,
             backgroundImage: user['photoURL'].isNotEmpty
                 ? NetworkImage(user['photoURL'])
                 : null,
             child: user['photoURL'].isEmpty
-                ? const Icon(Icons.person,
-                    color: Colors.white, size: 30) // Adjust icon size
+                ? const Icon(Icons.person, color: Colors.white, size: 30)
                 : null,
             backgroundColor: color,
           ),

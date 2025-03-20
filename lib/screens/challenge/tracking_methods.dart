@@ -84,6 +84,11 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      // ✅ If the challenge is completed, update the lifetime points
+      if (isCompleted) {
+        await _updateLifetimePoints();
+      }
+
       setState(() {
         _progress = newProgress;
         _randomFact =
@@ -95,6 +100,43 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
       setState(() {
         _isUpdating = false;
       });
+    }
+  }
+
+  Future<void> _updateLifetimePoints() async {
+    final userDocRef = _firestore.collection('users').doc(_user!.uid);
+    final challengeDocRef =
+        _firestore.collection('challenges').doc(widget.challengeID);
+
+    try {
+      // ✅ Fetch challenge points from the challenges collection
+      DocumentSnapshot challengeDoc = await challengeDocRef.get();
+      int challengePoints = 10; // Default points if not specified
+
+      if (challengeDoc.exists) {
+        var challengeData = challengeDoc.data() as Map<String, dynamic>;
+        challengePoints = challengeData['points'] ??
+            10; // Use the stored points or default to 10
+      }
+
+      // ✅ Fetch the user's current lifetime points
+      DocumentSnapshot userDoc = await userDocRef.get();
+      int currentLifetimePoints = 0;
+
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+        currentLifetimePoints = userData['lifetimePoints'] ?? 0;
+      }
+
+      // ✅ Update Firestore with the new lifetime points
+      await userDocRef.set({
+        'lifetimePoints': currentLifetimePoints + challengePoints,
+      }, SetOptions(merge: true));
+
+      debugPrint(
+          "✅ Lifetime points updated: ${currentLifetimePoints + challengePoints}");
+    } catch (e) {
+      debugPrint("❌ Failed to update lifetime points: $e");
     }
   }
 

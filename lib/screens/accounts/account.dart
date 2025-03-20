@@ -34,49 +34,30 @@ class _AccountPageState extends State<AccountPage>
 
   Future<void> _fetchUserPoints() async {
     try {
+      _user = _auth.currentUser;
       if (_user == null) return;
 
       String userId = _user!.uid;
-      int totalPoints = 0;
 
-      // Fetch user challenges
-      QuerySnapshot userChallengesSnapshot = await _firestore
-          .collection('user_challenges')
-          .where('userID', isEqualTo: userId)
-          .where('status',
-              isEqualTo: 'completed') // Only count completed challenges
-          .get();
+      // ✅ Fetch user's lifetime points directly from Firestore
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
 
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+        int lifetimePoints = userData['lifetimePoints'] ?? 0;
 
-        if (challengeData == null) continue;
+        // ✅ Update state with fetched lifetime points
+        setState(() {
+          _userPoints = lifetimePoints;
+        });
 
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-
-        if (challengeId != null) {
-          // Fetch challenge points
-          DocumentSnapshot challengeSnapshot =
-              await _firestore.collection('challenges').doc(challengeId).get();
-
-          Map<String, dynamic>? challengeInfo =
-              challengeSnapshot.data() as Map<String, dynamic>?;
-
-          if (challengeInfo != null) {
-            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
-            totalPoints += (progress * points);
-          }
-        }
+        debugPrint("✅ Lifetime points fetched: $lifetimePoints");
+      } else {
+        debugPrint("❌ User document does not exist");
       }
-
-      // Update state with total points
-      setState(() {
-        _userPoints = totalPoints;
-      });
     } catch (e) {
-      print("Error fetching user points: $e");
+      debugPrint("❌ Error fetching lifetime points: $e");
     }
   }
 
