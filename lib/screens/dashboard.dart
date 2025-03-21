@@ -40,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Get the current weekday index (0 = Monday, 6 = Sunday)
   final int currentDayIndex =
       DateTime.now().weekday - 1; // Adjust index (Monday = 0)
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _user = _auth.currentUser;
     _fetchUserPoints();
     _fetchUserRank();
+    _fetchRecycle();
     _fetchWeeklyChallenges();
   }
 
@@ -59,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // ✅ Fetch lifetime points directly from Firestore
       DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(userId).get();
+      await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
@@ -84,36 +86,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       if (_user == null) return;
 
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
-      Map<String, int> userScores = {};
+      final doc = await _firestore
+          .collection('user_challenges')
+          .doc('${_user!.uid}_recycle_5')
+          .get();
 
-      // Fetch user challenge progress
-      QuerySnapshot userChallengesSnapshot =
-          await firestore.collection('user_challenges').get();
-      int count = 0;
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
+      int completions = doc.exists
+          ? (doc.data()?['completedChallengesCount'] ?? 0)
+          : 0;
 
-        if (challengeData == null) continue;
-
-        String? userId = challengeData['userID'];
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-        String status = challengeData['status'] ?? '';
-
-        if (userId == null || challengeId == null) continue;
-
-        if (status == 'completed' && userId == _user!.uid) {
-          count++;
-        }
-      }
       setState(() {
-        _userRecycled = count;
+        _userRecycled = completions;
       });
+
+      debugPrint('✅ recycle_5 completions count from counter: $completions');
     } catch (e) {
-      print("Error fetching user rank: $e");
+      debugPrint('❌ Error fetching recycle completions: $e');
     }
+  }
+
+
+  Future<Map<String, double>> fetchUserImpact() async {
+    final userId = _user!.uid;
+
+    final challenges = [
+      {'id': 'recycle_5', 'multiplier': 0.25, 'metric': 'co2'},
+      {'id': 'refill_station', 'multiplier': 5.0, 'metric': 'water'},
+      {'id': 'pick_up_litter', 'multiplier': 1.0, 'metric': 'waste'},
+    ];
+
+    double totalCO2 = 0;
+    double totalWater = 0;
+    double totalWaste = 0;
+
+    for (var challenge in challenges) {
+      final doc = await _firestore
+          .collection('user_challenges')
+          .doc('${userId}_${challenge['id']}')
+          .get();
+
+      int completions = doc.exists
+          ? (doc.data()?['completedChallengesCount'] ?? 0)
+          : 0;
+
+      double impact = completions * (challenge['multiplier'] as double);
+
+      if (challenge['metric'] == 'co2') {
+        totalCO2 = impact;
+      } else if (challenge['metric'] == 'water') {
+        totalWater = impact;
+      } else if (challenge['metric'] == 'waste') {
+        totalWaste = impact;
+      }
+    }
+
+    return {
+      'co2': totalCO2,
+      'water': totalWater,
+      'waste': totalWaste,
+    };
   }
 
   /// Fetch user rank from the leaderboard
@@ -197,274 +228,303 @@ class _DashboardScreenState extends State<DashboardScreen> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 5),
-              const Text(
-                "Welcome Back!",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                "Good Morning, Sustainability Hero!",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Welcome Back!",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Column(
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Good Morning, Sustainability Hero!",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            Stack(
-                              alignment: Alignment.center,
+                            Column(
                               children: [
-                                SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: CircularProgressIndicator(
-                                    value: (_userPoints / 100)
-                                        .clamp(0.0, 1.0), // Normalized progress
-                                    backgroundColor: Colors.grey[300],
-                                    valueColor:
-                                        const AlwaysStoppedAnimation<Color>(
-                                            Color(
-                                                0xFF2E7D32)), // Green progress
-                                    strokeWidth: 6,
-                                  ),
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 50,
+                                      height: 50,
+                                      child: CircularProgressIndicator(
+                                        value: (_userPoints / 100).clamp(0.0, 1.0),
+                                        backgroundColor: Colors.grey[300],
+                                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                                        strokeWidth: 6,
+                                      ),
+                                    ),
+                                    const Icon(Icons.star, color: Color(0xFFFAE500), size: 30),
+                                  ],
                                 ),
-                                const Icon(Icons.star,
-                                    color: Color(0xFFFAE500), size: 30),
+                                const SizedBox(height: 8),
+                                Text("$_userPoints pts",
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text("$_userPoints pts",
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            const Icon(Icons.emoji_events,
-                                color: Color(0xFFFAE500), size: 30),
-                            const SizedBox(height: 4),
-                            Text(
-                              "#$_userRank",
-                              style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black),
-                            ),
-                            const Text(
-                              "Your Rank",
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            Icon(Icons.recycling,
-                                color: Color(0xFFFAE500), size: 30),
-                            SizedBox(height: 4),
-                            Text("$_userRecycled",
-                                style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black)),
-                            Text("Recycled",
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Row for Map and Leaderboard Widgets
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 160,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => MapScreen()),
-                          );
-                        },
-                        child: Card(
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.location_on,
-                                  color: Colors.grey, size: 40),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Map",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                            Column(
+                              children: [
+                                const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "#$_userRank",
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Find the closest\nRecycle Bin",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black54,
+                                const Text(
+                                  "Your Rank",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                Icon(Icons.recycling, color: Color(0xFFFAE500), size: 30),
+                                SizedBox(height: 4),
+                                Text("$_userRecycled",
+                                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
+                                Text("Recycled", style: TextStyle(fontSize: 14, color: Colors.grey)),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 160,
-                      child: Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: SingleChildScrollView(
-                            // ✅ Added to prevent overflow
-                            child: FutureBuilder<List<Map<String, dynamic>>>(
-                              future: _fetchTopThree(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                }
-                                if (snapshot.hasError ||
-                                    snapshot.data == null ||
-                                    snapshot.data!.isEmpty) {
-                                  return const Center(
-                                      child: Text(
-                                          "No leaderboard data available"));
-                                }
-
-                                List<Map<String, dynamic>> topThree =
-                                    snapshot.data!;
-
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          "Leaderboard",
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Spacer(),
-                                        Icon(Icons.star, color: Colors.amber),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-
-                                    // ✅ Dynamic leaderboard entries using Firestore data
-                                    _leaderboardEntry(
-                                        "1. ${topThree[0]['name']}",
-                                        topThree[0]['score'],
-                                        Colors.amber),
-                                    if (topThree.length > 1)
-                                      _leaderboardEntry(
-                                          "2. ${topThree[1]['name']}",
-                                          topThree[1]['score'],
-                                          Colors.grey),
-                                    if (topThree.length > 2)
-                                      _leaderboardEntry(
-                                          "3. ${topThree[2]['name']}",
-                                          topThree[2]['score'],
-                                          Colors.brown),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Card(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
+                  const SizedBox(height: 4),
+                  // Row for Map and Leaderboard Widgets
+                  Row(
                     children: [
-                      Text(
-                        "This Week - ${_getCurrentWeekDateRange()}",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: SizedBox(
+                          height: 180,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => MapScreen()),
+                              );
+                            },
+                            child: Card(
+                              color: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.location_on, color: Colors.grey, size: 40),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "Map",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Find the closest\nRecycle Bin",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(7, (index) {
-                          return Column(
-                            children: [
-                              _getStreakIcon(
-                                  index), // Fetch icon based on streak data
-                              const SizedBox(height: 4),
-                              Text(_getWeekdayLabel(index)),
-                            ],
-                          );
-                        }),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 180,
+                          child: Card(
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: FutureBuilder<List<Map<String, dynamic>>>(
+                                future: _fetchTopThree(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(child: CircularProgressIndicator());
+                                  }
+                                  if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+                                    return const Center(child: Text("No leaderboard data available"));
+                                  }
+
+                                  List<Map<String, dynamic>> topThree = snapshot.data!;
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            "Leaderboard",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Spacer(),
+                                          Icon(Icons.star, color: Colors.amber),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _leaderboardEntry("1. ${topThree[0]['name']}", topThree[0]['score'], Colors.amber),
+                                      if (topThree.length > 1)
+                                        _leaderboardEntry("2. ${topThree[1]['name']}", topThree[1]['score'], Colors.grey),
+                                      if (topThree.length > 2)
+                                        _leaderboardEntry("3. ${topThree[2]['name']}", topThree[2]['score'], Colors.brown),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                  SizedBox(height: 16),
+                  // Weekly Streak Card
+                  Card(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            "This Week - ${_getCurrentWeekDateRange()}",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: List.generate(7, (index) {
+                              return Column(
+                                children: [
+                                  _getStreakIcon(index),
+                                  const SizedBox(height: 4),
+                                  Text(_getWeekdayLabel(index)),
+                                ],
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  // Environmental Impact Card
+                  FutureBuilder<Map<String, double>>(
+                    future: fetchUserImpact(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            ));
+                      }
+
+                      final impactData = snapshot.data ?? {'co2': 0, 'water': 0, 'waste': 0};
+
+                      return Card(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.eco, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Your Environmental Impact",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _impactMetric(
+                                    icon: Icons.co2,
+                                    value: impactData['co2']!.toStringAsFixed(1),
+                                    label: "CO₂ Saved",
+                                    unit: "kg",
+                                    color: Colors.blue,
+                                  ),
+                                  _impactMetric(
+                                    icon: Icons.water_drop,
+                                    value: impactData['water']!.toStringAsFixed(0),
+                                    label: "Water Saved",
+                                    unit: "L",
+                                    color: Colors.lightBlue,
+                                  ),
+                                  _impactMetric(
+                                    icon: Icons.delete_outline,
+                                    value: impactData['waste']!.toStringAsFixed(1),
+                                    label: "Waste Diverted",
+                                    unit: "kg",
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: 16),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-      // QR Code Button as a FAB that is center-docked
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () {},
@@ -472,7 +532,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // BottomAppBar wrapped with SafeArea and MediaQuery.removePadding to fix overflow
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
@@ -486,6 +545,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  // Helper method for impact metrics
+  Widget _impactMetric({
+    required IconData icon,
+    required String value,
+    required String label,
+    required String unit,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 30),
+        SizedBox(height: 4),
+        RichText(
+          text: TextSpan(
+            style: TextStyle(color: Colors.black, fontSize: 16),
+            children: [
+              TextSpan(
+                text: value,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              TextSpan(text: " $unit"),
+            ],
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
   Future<void> _fetchWeeklyChallenges() async {
     try {
       if (_user == null) return;
@@ -493,7 +584,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       DateTime now = DateTime.now();
       DateTime startOfWeek =
-          now.subtract(Duration(days: now.weekday - 1)); // Monday
+      now.subtract(Duration(days: now.weekday - 1)); // Monday
       DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
 
       // Fetch all challenges for the user (without range filter)
@@ -505,20 +596,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Map<int, bool> streakDays = {for (int i = 0; i < 7; i++) i: false};
       for (var doc in userChallengesSnapshot.docs) {
         Map<String, dynamic>? challengeData =
-            doc.data() as Map<String, dynamic>?;
+        doc.data() as Map<String, dynamic>?;
 
         if (challengeData == null || !challengeData.containsKey('lastUpdated'))
           continue;
 
         Timestamp? challengeTimestamp =
-            challengeData['lastUpdated'] as Timestamp?;
+        challengeData['lastUpdated'] as Timestamp?;
         if (challengeTimestamp == null) continue;
 
         DateTime challengeDate = challengeTimestamp.toDate();
 
         // Manually filter the timestamp in Dart
         if (challengeDate
-                .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+            .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
             challengeDate.isBefore(endOfWeek.add(const Duration(seconds: 1)))) {
           int dayIndex = challengeDate.weekday - 1; // Convert Mon-Sun to 0-6
           streakDays[dayIndex] = true;
@@ -533,10 +624,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-// Map for tracking streak
+  // Map for tracking streak
   Map<int, bool> _streakDays = {for (int i = 0; i < 7; i++) i: false};
 
-// Function to return a check icon if the challenge is completed for that day
+  // Function to return a check icon if the challenge is completed for that day
   Widget _getStreakIcon(int index) {
     return Icon(
       _streakDays[index] == true ? Icons.check_circle : Icons.cancel,
@@ -563,7 +654,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _getCurrentWeekDateRange() {
     DateTime now = DateTime.now();
     DateTime startOfWeek =
-        now.subtract(Duration(days: now.weekday - 1)); // Monday
+    now.subtract(Duration(days: now.weekday - 1)); // Monday
     DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
     return "${startOfWeek.day} - ${endOfWeek.day} ${_getMonthName(startOfWeek)}";
   }
@@ -609,7 +700,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Spacer(),
           Text(
             "$points pts",
-            style: TextStyle(fontSize: 6, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),

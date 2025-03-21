@@ -10,22 +10,32 @@ Widget buildBottomNavItem({
   required Function(int) onTap,
 }) {
   bool isActive = currentIndex == index;
-  return MaterialButton(
-    onPressed: () {
-      onTap(index);
-      if (route.isNotEmpty) {
-        Navigator.pushNamed(context, route);
-      }
-    },
-    minWidth: 40,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isActive ? Colors.green : Colors.grey),
-        Text(label,
-            style: TextStyle(
-                color: isActive ? Colors.green : Colors.grey, fontSize: 12)),
-      ],
+  return Flexible(
+    child: MaterialButton(
+      onPressed: () {
+        onTap(index);
+        if (route.isNotEmpty) {
+          Navigator.pushNamed(context, route);
+        }
+      },
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
+      minWidth: 0, // Remove the minimum width constraint
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isActive ? Colors.green : Colors.grey),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.green : Colors.grey,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -58,7 +68,7 @@ class BottomNavBar extends StatelessWidget {
     {
       "index": 3,
       "icon": Icons.account_circle,
-      "label": "Accounts",
+      "label": "Account",
       "route": "/accounts"
     },
   ];
@@ -74,45 +84,20 @@ class BottomNavBar extends StatelessWidget {
           shape: const CircularNotchedRectangle(),
           notchMargin: 6.0,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 0.0),
             child: Row(
-              children: [
-                // Left side items
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _navItems.sublist(0, 2).map((item) {
-                      return buildBottomNavItem(
-                        context: context,
-                        index: item["index"],
-                        icon: item["icon"],
-                        label: item["label"],
-                        route: item["route"],
-                        currentIndex: currentIndex,
-                        onTap: onTap,
-                      );
-                    }).toList(),
-                  ),
-                ),
-                // Right side items
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _navItems.sublist(2, 4).map((item) {
-                      return buildBottomNavItem(
-                        context: context,
-                        index: item["index"],
-                        icon: item["icon"],
-                        label: item["label"],
-                        route: item["route"],
-                        currentIndex: currentIndex,
-                        onTap: onTap,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: _navItems.map((item) {
+                return buildBottomNavItem(
+                  context: context,
+                  index: item["index"],
+                  icon: item["icon"],
+                  label: item["label"],
+                  route: item["route"],
+                  currentIndex: currentIndex,
+                  onTap: onTap,
+                );
+              }).toList(),
             ),
           ),
         ),
