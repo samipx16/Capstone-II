@@ -244,13 +244,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    "Good Morning, Sustainability Hero!",
-                    style: TextStyle(
+
+                  Text(
+                    "${_getGreeting()}, Sustainability Hero!",
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white70,
                     ),
                   ),
+
                   const SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,
@@ -645,6 +647,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       "Sun"
     ];
     return weekdays[index];
+  }
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return "Good Morning";
+    } else if (hour < 17) {
+      return "Good Afternoon";
+    } else {
+      return "Good Evening";
+    }
   }
 
   // Returns the current week's date range
