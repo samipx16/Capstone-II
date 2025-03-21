@@ -33,6 +33,7 @@ class _MilestonesPageState extends State<MilestonesPage> {
         uid = user.uid;
       });
 
+      await _fetchCompletedChallengesCount();
       // Ensure milestones are initialized for the new user
       await _initializeUserMilestones();
 
@@ -40,39 +41,56 @@ class _MilestonesPageState extends State<MilestonesPage> {
       _listenToChallengeUpdates();
 
       // Rescan challenges and sync milestones when the user logs in
-      await rescanChallengesAndSyncMilestones();
+      //await rescanChallengesAndSyncMilestones();
+    }
+  }
+
+  Future<void> _fetchCompletedChallengesCount() async {
+    QuerySnapshot userChallengesSnapshot = await _firestore
+        .collection('user_challenges')
+        .where('userID', isEqualTo: uid)
+        .get();
+
+    for (var doc in userChallengesSnapshot.docs) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+      int completedCount = data['completedChallengesCount'] ?? 0;
+      debugPrint(
+          "✅ Challenge ${data['challengeID']} has been completed $completedCount times.");
     }
   }
 
   void _listenToChallengeUpdates() {
-    // Listen to all documents in the user_challenges collection that belong to the current user
     _firestore
         .collection('user_challenges')
-        .where('userID', isEqualTo: uid) // Filter by the current user
+        .where('userID', isEqualTo: uid) // Filter by current user
         .snapshots()
         .listen((querySnapshot) {
-      print("🔥 Firestore detected challenge updates for user: $uid");
-
-      // Process each updated challenge document
       for (var doc in querySnapshot.docs) {
-        Map<String, dynamic> userChallenges =
-        doc.data() as Map<String, dynamic>;
-        print("📌 Updated userChallenges: $userChallenges");
+        Map<String, dynamic> userChallengeData =
+            doc.data() as Map<String, dynamic>;
 
-        // Sync milestones with the updated challenges
-        _syncMilestonesWithChallenges(userChallenges);
+        int completedCount = userChallengeData['completedChallengesCount'] ?? 0;
+
+        debugPrint(
+            "📌 Challenge ${userChallengeData['challengeID']} completed $completedCount times.");
+
+        _syncMilestonesWithChallenges(userChallengeData);
       }
     });
   }
 
-  Future<void> _syncMilestonesWithChallenges(Map<String, dynamic> userChallenges) async {
-    DocumentReference userMilestonesRef = _firestore.collection('user_milestones').doc(uid);
+  Future<void> _syncMilestonesWithChallenges(
+      Map<String, dynamic> userChallenges) async {
+    DocumentReference userMilestonesRef =
+        _firestore.collection('user_milestones').doc(uid);
     Map<String, dynamic> milestoneUpdates = {};
     List<Map<String, String>> completedMilestones = [];
 
     // Fetch the current milestone data
     DocumentSnapshot milestoneSnapshot = await userMilestonesRef.get();
-    Map<String, dynamic> currentMilestones = milestoneSnapshot.data() as Map<String, dynamic>;
+    Map<String, dynamic> currentMilestones =
+        milestoneSnapshot.data() as Map<String, dynamic>;
 
     final List<Map<String, dynamic>> challenges = [
       {
@@ -109,16 +127,19 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
     for (var challenge in challenges) {
       if (userChallenges['challengeID'] == challenge['id']) {
-        int progress = userChallenges['progress'] ?? 0;
-        bool isCompleted = progress >= challenge['goal'];
+        int completedCount = userChallenges['completedChallengesCount'] ?? 0;
+        bool isCompleted = completedCount >= challenge['goal'];
 
         // Check if the milestone is completed for the first time
-        if (isCompleted && currentMilestones[challenge['milestone']]['completed'] != true) {
-          completedMilestones.add({'id': challenge['milestone'], 'title': challenge['title']});
+        if (isCompleted &&
+            currentMilestones[challenge['milestone']]['completed'] != true) {
+          completedMilestones
+              .add({'id': challenge['milestone'], 'title': challenge['title']});
         }
 
         // Update progress and completed status
-        milestoneUpdates['${challenge['milestone']}.progress'] = progress.clamp(0, challenge['goal']);
+        milestoneUpdates['${challenge['milestone']}.progress'] =
+            completedCount.clamp(0, challenge['goal']);
         milestoneUpdates['${challenge['milestone']}.completed'] = isCompleted;
       }
     }
@@ -127,8 +148,10 @@ class _MilestonesPageState extends State<MilestonesPage> {
     bool allMilestonesCompleted = milestoneUpdates.length == 5 &&
         milestoneUpdates.values.every((value) => value >= 1);
 
-    if (allMilestonesCompleted && currentMilestones['milestone_6']['completed'] != true) {
-      completedMilestones.add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
+    if (allMilestonesCompleted &&
+        currentMilestones['milestone_6']['completed'] != true) {
+      completedMilestones
+          .add({"id": "milestone_6", "title": "Ultimate Mean Green Hero"});
       milestoneUpdates['milestone_6.progress'] = 5; // Set to max (goal = 5)
       milestoneUpdates['milestone_6.completed'] = true;
     }
@@ -151,9 +174,9 @@ class _MilestonesPageState extends State<MilestonesPage> {
 
   Future<void> rescanChallengesAndSyncMilestones() async {
     DocumentSnapshot challengeSnapshot =
-    await _firestore.collection('user_challenges').doc(uid).get();
+        await _firestore.collection('user_challenges').doc(uid).get();
     DocumentSnapshot milestoneSnapshot =
-    await _firestore.collection('user_milestones').doc(uid).get();
+        await _firestore.collection('user_milestones').doc(uid).get();
 
     if (!challengeSnapshot.exists || !milestoneSnapshot.exists) {
       print("⚠️ No existing challenge or milestone data found.");
@@ -161,9 +184,9 @@ class _MilestonesPageState extends State<MilestonesPage> {
     }
 
     Map<String, dynamic> userChallenges =
-    challengeSnapshot.data() as Map<String, dynamic>;
+        challengeSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> userMilestones =
-    milestoneSnapshot.data() as Map<String, dynamic>;
+        milestoneSnapshot.data() as Map<String, dynamic>;
     Map<String, dynamic> milestoneUpdates = {};
 
     // 🔥 Rescan "Go Plastic-Free" Challenge and Sync it with "Mean Green Warrior"
@@ -206,23 +229,43 @@ class _MilestonesPageState extends State<MilestonesPage> {
   /// Ensures that the new user has a milestone document in Firestore.
   Future<void> _initializeUserMilestones() async {
     DocumentReference userMilestonesRef =
-    _firestore.collection('user_milestones').doc(uid);
+        _firestore.collection('user_milestones').doc(uid);
     DocumentSnapshot snapshot = await userMilestonesRef.get();
 
     if (!snapshot.exists || snapshot.data() == null) {
       print("Initializing milestones for new user: $uid");
 
       await userMilestonesRef.set({
-        "milestone_1": {"title": "Scrappy Recycler", "goal": 50, "progress": 0, "completed": false},
+        "milestone_1": {
+          "title": "Scrappy Recycler",
+          "goal": 50,
+          "progress": 0,
+          "completed": false
+        },
         "milestone_2": {
           "title": "Mean Green Warrior",
           "goal": 7,
           "progress": 0,
           "completed": false
         },
-        "milestone_3": {"title": "Lucky Commuter", "goal": 10, "progress": 0, "completed": false},
-        "milestone_4": {"title": "Hydration Hawk", "goal": 20, "progress": 0, "completed": false},
-        "milestone_5": {"title": "Eco Eagle", "goal": 10, "progress": 0, "completed": false},
+        "milestone_3": {
+          "title": "Lucky Commuter",
+          "goal": 10,
+          "progress": 0,
+          "completed": false
+        },
+        "milestone_4": {
+          "title": "Hydration Hawk",
+          "goal": 20,
+          "progress": 0,
+          "completed": false
+        },
+        "milestone_5": {
+          "title": "Eco Eagle",
+          "goal": 10,
+          "progress": 0,
+          "completed": false
+        },
         "milestone_6": {
           "title": "Ultimate Mean Green Hero",
           "goal": 5,
@@ -259,14 +302,14 @@ class _MilestonesPageState extends State<MilestonesPage> {
           }
 
           Map<String, dynamic>? milestones =
-          snapshot.data!.data() as Map<String, dynamic>?;
+              snapshot.data!.data() as Map<String, dynamic>?;
 
           if (milestones == null || milestones.isEmpty) {
             return const Center(
                 child: Text(
-                  "No milestones available. Please try again later.",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ));
+              "No milestones available. Please try again later.",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ));
           }
 
           return ListView(
@@ -300,7 +343,8 @@ class _MilestonesPageState extends State<MilestonesPage> {
   }
 
   // Add the showMilestoneDetails method here
-  void showMilestoneDetails(BuildContext context, Map<String, dynamic> milestone, String key) {
+  void showMilestoneDetails(
+      BuildContext context, Map<String, dynamic> milestone, String key) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -310,9 +354,11 @@ class _MilestonesPageState extends State<MilestonesPage> {
       },
     );
   }
+
   /// Builds each milestone card with improved layout, bigger images, and descriptions.
   Widget _buildMilestoneCard(Map<String, dynamic> milestone, String key) {
-    double progressPercent = (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
+    double progressPercent =
+        (milestone['progress'] / milestone['goal']).clamp(0.0, 1.0);
     bool isCompleted = milestone['completed'] == true;
     String badgePath = 'assets/$key.png';
 

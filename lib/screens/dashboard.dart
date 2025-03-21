@@ -52,44 +52,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _fetchUserPoints() async {
     try {
+      _user = _auth.currentUser;
       if (_user == null) return;
+
       String userId = _user!.uid;
-      int totalPoints = 0;
 
-      QuerySnapshot userChallengesSnapshot = await _firestore
-          .collection('user_challenges')
-          .where('userID', isEqualTo: userId)
-          .where('status', isEqualTo: 'completed')
-          .get();
+      // ✅ Fetch lifetime points directly from Firestore
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
 
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+        int lifetimePoints = userData['lifetimePoints'] ?? 0;
 
-        if (challengeData == null) continue;
+        // ✅ Update state with fetched lifetime points
+        setState(() {
+          _userPoints = lifetimePoints;
+        });
 
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-
-        if (challengeId != null) {
-          DocumentSnapshot challengeSnapshot =
-              await _firestore.collection('challenges').doc(challengeId).get();
-
-          Map<String, dynamic>? challengeInfo =
-              challengeSnapshot.data() as Map<String, dynamic>?;
-
-          if (challengeInfo != null) {
-            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
-            totalPoints += (progress * points);
-          }
-        }
+        debugPrint("✅ Lifetime points fetched: $lifetimePoints");
+      } else {
+        debugPrint("❌ User document does not exist");
       }
-
-      setState(() {
-        _userPoints = totalPoints;
-      });
     } catch (e) {
-      print("Error fetching user points: $e");
+      debugPrint("❌ Error fetching lifetime points: $e");
     }
   }
 
@@ -135,123 +121,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       if (_user == null) return;
 
+      String userId = _user!.uid;
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      Map<String, int> userScores = {};
 
-      // Fetch user challenge progress
-      QuerySnapshot userChallengesSnapshot =
-          await firestore.collection('user_challenges').get();
+      // ✅ Fetch all users ordered by `lifetimePoints`
+      QuerySnapshot usersSnapshot = await firestore
+          .collection('users')
+          .orderBy('lifetimePoints', descending: true)
+          .get();
 
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
+      int rank = 1; // Start ranking from 1
+      bool foundUser = false;
 
-        if (challengeData == null) continue;
-
-        String? userId = challengeData['userID'];
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-        String status = challengeData['status'] ?? '';
-
-        if (userId == null || challengeId == null) continue;
-
-        if (status == 'completed') {
-          DocumentSnapshot challengeSnapshot =
-              await firestore.collection('challenges').doc(challengeId).get();
-          Map<String, dynamic>? challengeInfo =
-              challengeSnapshot.data() as Map<String, dynamic>?;
-
-          if (challengeInfo != null) {
-            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
-            userScores[userId] =
-                (userScores[userId] ?? 0) + (progress * points);
-          }
-        }
-      }
-
-      // Convert to a sorted list (highest score first)
-      List<MapEntry<String, int>> sortedLeaderboard =
-          userScores.entries.toList();
-      sortedLeaderboard.sort((a, b) => b.value.compareTo(a.value));
-
-      // Find the current user's rank
-      int rank = 1;
-      for (var entry in sortedLeaderboard) {
-        if (entry.key == _user!.uid) {
-          setState(() {
-            _userRank = rank;
-          });
-          break;
+      for (var doc in usersSnapshot.docs) {
+        if (doc.id == userId) {
+          foundUser = true;
+          break; // Stop when we find the user's rank
         }
         rank++;
       }
+
+      if (foundUser) {
+        setState(() {
+          _userRank = rank;
+        });
+        debugPrint("✅ User rank updated: $rank");
+      } else {
+        debugPrint("❌ User not found in leaderboard");
+      }
     } catch (e) {
-      print("Error fetching user rank: $e");
+      debugPrint("❌ Error fetching user rank: $e");
     }
   }
 
   Future<List<Map<String, dynamic>>> _fetchTopThree() async {
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      Map<String, int> userScores = {};
-      Map<String, String> userNames = {};
 
-      // Fetch all users
-      QuerySnapshot usersSnapshot = await firestore.collection('users').get();
-      for (var userDoc in usersSnapshot.docs) {
-        String userId = userDoc.id;
-        Map<String, dynamic>? userData =
-            userDoc.data() as Map<String, dynamic>?;
+      // ✅ Fetch the top 3 users based on `lifetimePoints`
+      QuerySnapshot usersSnapshot = await firestore
+          .collection('users')
+          .orderBy('lifetimePoints', descending: true)
+          .limit(3)
+          .get();
 
-        if (userData != null) {
-          userNames[userId] = userData['name'] ?? 'Unknown';
-          userScores[userId] = 0;
-        }
-      }
+      List<Map<String, dynamic>> topThree = usersSnapshot.docs.map((doc) {
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+        return {
+          'name': userData['name'] ?? 'Unknown',
+          'photoURL': userData['photoURL'] ?? '',
+          'score': userData['lifetimePoints'] ?? 0,
+        };
+      }).toList();
 
-      // Fetch user challenge progress
-      QuerySnapshot userChallengesSnapshot =
-          await firestore.collection('user_challenges').get();
-      for (var challengeDoc in userChallengesSnapshot.docs) {
-        Map<String, dynamic>? challengeData =
-            challengeDoc.data() as Map<String, dynamic>?;
-
-        if (challengeData == null) continue;
-
-        String? userId = challengeData['userID'];
-        String? challengeId = challengeData['challengeID'];
-        int progress = (challengeData['progress'] as num?)?.toInt() ?? 0;
-        String status = challengeData['status'] ?? '';
-
-        if (userId == null || challengeId == null) continue;
-
-        if (status == 'completed' && userScores.containsKey(userId)) {
-          DocumentSnapshot challengeSnapshot =
-              await firestore.collection('challenges').doc(challengeId).get();
-          Map<String, dynamic>? challengeInfo =
-              challengeSnapshot.data() as Map<String, dynamic>?;
-
-          if (challengeInfo != null) {
-            int points = int.tryParse(challengeInfo['points'].toString()) ?? 0;
-            userScores[userId] =
-                (userScores[userId] ?? 0) + (progress * points);
-          }
-        }
-      }
-
-      // Sort and take the top 3 players
-      List<Map<String, dynamic>> sortedLeaderboard = userScores.entries
-          .map((entry) => {
-                'name': userNames[entry.key] ?? "Unknown",
-                'score': entry.value ?? 0,
-              })
-          .toList();
-
-      sortedLeaderboard.sort((a, b) => (b['score']).compareTo(a['score']));
-
-      return sortedLeaderboard.take(3).toList();
+      debugPrint("✅ Top 3 users fetched successfully");
+      return topThree;
     } catch (e) {
-      print("Error fetching top three leaderboard: $e");
+      debugPrint("❌ Error fetching top three leaderboard: $e");
       return [];
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math'; // For random facts
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart'; // Needed for kIsWeb
@@ -23,12 +24,22 @@ class TrackingMethodsScreen extends StatefulWidget {
   _TrackingMethodsScreenState createState() => _TrackingMethodsScreenState();
 }
 
-class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
+class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late User? _user;
   int _progress = 0;
+  bool _isUpdating = false; // Prevent multiple clicks
   File? _image;
+  String? _randomFact;
+  final List<String> _sustainabilityFacts = [
+    "Recycling one aluminum can saves enough energy to run a TV for 3 hours!",
+    "Turning off your faucet while brushing your teeth can save 8 gallons of water per day.",
+    "Plastic takes over 400 years to degrade in landfills.",
+    "One tree can absorb as much carbon in a year as a car produces while driving 26,000 miles!",
+    "LED bulbs use at least 75% less energy and last 25 times longer than traditional bulbs.",
+  ];
 
   @override
   void initState() {
@@ -47,18 +58,17 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
 
     if (doc.exists) {
       var data = doc.data() as Map<String, dynamic>;
-
       setState(() {
         _progress = data['progress'] ?? 0;
       });
-    } else {
-      debugPrint(
-          "⚠️ No challenge progress found in Firestore for ${widget.challengeID}");
     }
   }
 
   Future<void> _updateChallengeProgress(int newProgress) async {
-    if (_user == null) return;
+    if (_user == null || _isUpdating) return;
+    setState(() {
+      _isUpdating = true;
+    });
 
     bool isCompleted = newProgress >= widget.requiredProgress;
     String newStatus = isCompleted ? 'completed' : 'in_progress';
@@ -68,45 +78,77 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         .doc("${_user!.uid}_${widget.challengeID}");
 
     try {
-      // Check if the document exists first
-      final docSnapshot = await docRef.get();
-      if (docSnapshot.exists) {
-        // Use update if the document already exists
-        await docRef.update({
-          'status': newStatus,
-          'progress': newProgress,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Create the document if it does not exist
-        await docRef.set({
-          'userID': _user!.uid,
-          'challengeID': widget.challengeID,
-          'status': newStatus,
-          'progress': newProgress,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        });
+      // Fetch existing document to check for `completedChallengesCount`
+      DocumentSnapshot doc = await docRef.get();
+      int existingCompletedCount = 0;
+
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        existingCompletedCount = data['completedChallengesCount'] ?? 0;
       }
 
-      final updatedDoc = await docRef.get();
-      debugPrint("✅ Updated Firestore document data: ${updatedDoc.data()}");
+      await docRef.set({
+        'status': newStatus,
+        'progress': newProgress,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'completedChallengesCount': isCompleted
+            ? existingCompletedCount + 1
+            : existingCompletedCount, // ✅ Increment count only when completed
+      }, SetOptions(merge: true));
+
+      //  If the challenge is completed, update lifetime points
+      if (isCompleted) {
+        await _updateLifetimePoints();
+      }
 
       setState(() {
         _progress = newProgress;
+        _randomFact =
+            _sustainabilityFacts[Random().nextInt(_sustainabilityFacts.length)];
+        _isUpdating = false;
       });
-
-      debugPrint("✅ Firestore update successful!");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              isCompleted ? "🎉 Challenge Completed!" : "📈 Progress Updated"),
-        ),
-      );
     } catch (e) {
       debugPrint("❌ Firestore update failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Update failed: $e")),
-      );
+      setState(() {
+        _isUpdating = false;
+      });
+    }
+  }
+
+  Future<void> _updateLifetimePoints() async {
+    final userDocRef = _firestore.collection('users').doc(_user!.uid);
+    final challengeDocRef =
+        _firestore.collection('challenges').doc(widget.challengeID);
+
+    try {
+      //  Fetch challenge points from the challenges collection
+      DocumentSnapshot challengeDoc = await challengeDocRef.get();
+      int challengePoints = 10; // Default points if not specified
+
+      if (challengeDoc.exists) {
+        var challengeData = challengeDoc.data() as Map<String, dynamic>;
+        challengePoints = challengeData['points'] ??
+            10; // Use the stored points or default to 10
+      }
+
+      // Fetch the user's current lifetime points
+      DocumentSnapshot userDoc = await userDocRef.get();
+      int currentLifetimePoints = 0;
+
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+        currentLifetimePoints = userData['lifetimePoints'] ?? 0;
+      }
+
+      // ✅ Update Firestore with the new lifetime points
+      await userDocRef.set({
+        'lifetimePoints': currentLifetimePoints + challengePoints,
+      }, SetOptions(merge: true));
+
+      debugPrint(
+          " Lifetime points updated: ${currentLifetimePoints + challengePoints}");
+    } catch (e) {
+      debugPrint("❌ Failed to update lifetime points: $e");
     }
   }
 
@@ -272,7 +314,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
         debugPrint(
             "✅ QR Code Matched: $qrCode - ${binDoc['bin name']} at ${binDoc['location']}");
 
-        // ✅ Call Firestore update
+        // Call Firestore update
         await _updateChallengeProgress(_progress + 1);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -382,14 +424,44 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Track Challenge"), backgroundColor: Colors.green),
+        title: const Text("Track Challenge"),
+        backgroundColor: Colors.green,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Progress: $_progress / ${widget.requiredProgress}"),
             const SizedBox(height: 20),
+            Text("Progress: $_progress / ${widget.requiredProgress}",
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: LinearProgressIndicator(
+                value: _progress / widget.requiredProgress,
+                backgroundColor: Colors.grey[300],
+                color: Colors.green,
+                minHeight: 10,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 🔥 Fix: Replace the generic button with the correct tracking method UI
             _buildTrackingUI(),
+
+            if (_randomFact != null) ...[
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text(
+                  "🌱 Did You Know? $_randomFact",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 16, fontStyle: FontStyle.italic),
+                ),
+              ),
+            ]
           ],
         ),
       ),
