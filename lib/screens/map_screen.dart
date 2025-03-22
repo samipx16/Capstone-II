@@ -32,7 +32,7 @@ class MapScreenState extends State<MapScreen> {
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: const CameraPosition(
-          target: LatLng(33.2107, -97.1473),
+          target: LatLng(33.253801237793695, -97.15260379334741),
           zoom: 15.0,
         ),
         markers: {

@@ -4,6 +4,8 @@ import 'package:ecoeagle/screens/map_screen.dart';
 import './widgets/bottom_navbar.dart';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -285,14 +287,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text("$_userPoints pts",
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(
+                                  "$_userPoints pts",
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                const Text(
+                                  "Your Points",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
                               ],
                             ),
                             Column(
                               children: [
-                                const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
-                                const SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFFFF8E1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
+                                ),
+                                const SizedBox(height: 8),
                                 Text(
                                   "#$_userRank",
                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
@@ -305,8 +320,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             Column(
                               children: [
-                                Icon(Icons.recycling, color: Color(0xFFFAE500), size: 30),
-                                SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.recycling, color: Color(0xFF03AC52), size: 30),
+                                ),
+                                SizedBox(height: 8),
                                 Text("$_userRecycled",
                                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
                                 Text("Recycled", style: TextStyle(fontSize: 14, color: Colors.grey)),
@@ -324,41 +346,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(
                         child: SizedBox(
                           height: 180,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => MapScreen()),
-                              );
-                            },
-                            child: Card(
-                              color: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.location_on, color: Colors.grey, size: 40),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Map",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 2,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const MapScreen()),
+                                  );
+                                },
+                                child: Stack(
+                                  children: [
+                                    GoogleMap(
+                                      initialCameraPosition: const CameraPosition(
+                                        target: LatLng(33.253801237793695, -97.15260379334741),
+                                        zoom: 14,
+                                      ),
+                                      zoomControlsEnabled: false,
+                                      scrollGesturesEnabled: false,
+                                      rotateGesturesEnabled: false,
+                                      tiltGesturesEnabled: false,
+                                      myLocationButtonEnabled: false,
+                                      markers: {
+                                        Marker(
+                                          markerId: MarkerId("recycle_bin_preview"),
+                                          position: LatLng(33.253801237793695, -97.15260379334741),
+                                          infoWindow: InfoWindow(title: "UNT Recycle Bin Preview"),
+                                        ),
+                                      },
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Find the closest\nRecycle Bin",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black54,
+                                    Container(
+                                      color: Colors.black.withAlpha(150),
+                                      alignment: Alignment.center,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          // Icon(Icons.location_on, color: Colors.black, size: 40),
+                                          SizedBox(height: 6),
+                                          Text(
+                                            "Map",
+                                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            "Tap to find bins",
+                                            style: TextStyle(color: Colors.white, fontSize: 13),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
