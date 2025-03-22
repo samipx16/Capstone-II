@@ -285,14 +285,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text("$_userPoints pts",
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(
+                                  "$_userPoints pts",
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                const Text(
+                                  "Your Points",
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
                               ],
                             ),
                             Column(
                               children: [
-                                const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
-                                const SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFFFF8E1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
+                                ),
+                                const SizedBox(height: 8),
                                 Text(
                                   "#$_userRank",
                                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
@@ -305,8 +318,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             Column(
                               children: [
-                                Icon(Icons.recycling, color: Color(0xFFFAE500), size: 30),
-                                SizedBox(height: 4),
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.recycling, color: Color(0xFF03AC52), size: 30),
+                                ),
+                                SizedBox(height: 8),
                                 Text("$_userRecycled",
                                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
                                 Text("Recycled", style: TextStyle(fontSize: 14, color: Colors.grey)),
