@@ -5,7 +5,8 @@ import './widgets/bottom_navbar.dart';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import './widgets/qr_helper.dart';
+import './qr_scanner_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -61,15 +62,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       String userId = _user!.uid;
 
-      // ✅ Fetch lifetime points directly from Firestore
+      // Fetch lifetime points directly from Firestore
       DocumentSnapshot userDoc =
-      await _firestore.collection('users').doc(userId).get();
+          await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
         int lifetimePoints = userData['lifetimePoints'] ?? 0;
 
-        // ✅ Update state with fetched lifetime points
+        // Update state with fetched lifetime points
         setState(() {
           _userPoints = lifetimePoints;
         });
@@ -93,9 +94,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .doc('${_user!.uid}_recycle_5')
           .get();
 
-      int completions = doc.exists
-          ? (doc.data()?['completedChallengesCount'] ?? 0)
-          : 0;
+      int completions =
+          doc.exists ? (doc.data()?['completedChallengesCount'] ?? 0) : 0;
 
       setState(() {
         _userRecycled = completions;
@@ -106,7 +106,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       debugPrint('❌ Error fetching recycle completions: $e');
     }
   }
-
 
   Future<Map<String, double>> fetchUserImpact() async {
     final userId = _user!.uid;
@@ -127,9 +126,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .doc('${userId}_${challenge['id']}')
           .get();
 
-      int completions = doc.exists
-          ? (doc.data()?['completedChallengesCount'] ?? 0)
-          : 0;
+      int completions =
+          doc.exists ? (doc.data()?['completedChallengesCount'] ?? 0) : 0;
 
       double impact = completions * (challenge['multiplier'] as double);
 
@@ -264,7 +262,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       elevation: 4,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 24),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
@@ -277,23 +276,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       width: 50,
                                       height: 50,
                                       child: CircularProgressIndicator(
-                                        value: (_userPoints / 100).clamp(0.0, 1.0),
+                                        value:
+                                            (_userPoints / 100).clamp(0.0, 1.0),
                                         backgroundColor: Colors.grey[300],
-                                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                                Color(0xFF2E7D32)),
                                         strokeWidth: 6,
                                       ),
                                     ),
-                                    const Icon(Icons.star, color: Color(0xFFFAE500), size: 30),
+                                    const Icon(Icons.star,
+                                        color: Color(0xFFFAE500), size: 30),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   "$_userPoints pts",
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 const Text(
                                   "Your Points",
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -305,16 +311,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: Color(0xFFFFF8E1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.emoji_events, color: Color(0xFFFAE500), size: 30),
+                                  child: const Icon(Icons.emoji_events,
+                                      color: Color(0xFFFAE500), size: 30),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   "#$_userRank",
-                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+                                  style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
                                 ),
                                 const Text(
                                   "Your Rank",
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -326,12 +337,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: Colors.green.withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(Icons.recycling, color: Color(0xFF03AC52), size: 30),
+                                  child: Icon(Icons.recycling,
+                                      color: Color(0xFF03AC52), size: 30),
                                 ),
                                 SizedBox(height: 8),
                                 Text("$_userRecycled",
-                                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-                                Text("Recycled", style: TextStyle(fontSize: 14, color: Colors.grey)),
+                                    style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black)),
+                                Text("Recycled",
+                                    style: TextStyle(
+                                        fontSize: 14, color: Colors.grey)),
                               ],
                             ),
                           ],
@@ -357,14 +374,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (context) => const MapScreen()),
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const MapScreen()),
                                   );
                                 },
                                 child: Stack(
                                   children: [
                                     GoogleMap(
-                                      initialCameraPosition: const CameraPosition(
-                                        target: LatLng(33.253801237793695, -97.15260379334741),
+                                      initialCameraPosition:
+                                          const CameraPosition(
+                                        target: LatLng(33.253801237793695,
+                                            -97.15260379334741),
                                         zoom: 14,
                                       ),
                                       zoomControlsEnabled: false,
@@ -374,9 +395,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       myLocationButtonEnabled: false,
                                       markers: {
                                         Marker(
-                                          markerId: MarkerId("recycle_bin_preview"),
-                                          position: LatLng(33.253801237793695, -97.15260379334741),
-                                          infoWindow: InfoWindow(title: "UNT Recycle Bin Preview"),
+                                          markerId:
+                                              MarkerId("recycle_bin_preview"),
+                                          position: LatLng(33.253801237793695,
+                                              -97.15260379334741),
+                                          infoWindow: InfoWindow(
+                                              title: "UNT Recycle Bin Preview"),
                                         ),
                                       },
                                     ),
@@ -384,17 +408,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       color: Colors.black.withAlpha(150),
                                       alignment: Alignment.center,
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: const [
                                           // Icon(Icons.location_on, color: Colors.black, size: 40),
                                           SizedBox(height: 6),
                                           Text(
                                             "Map",
-                                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold),
                                           ),
                                           Text(
                                             "Tap to find bins",
-                                            style: TextStyle(color: Colors.white, fontSize: 13),
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13),
                                           ),
                                         ],
                                       ),
@@ -420,17 +450,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: FutureBuilder<List<Map<String, dynamic>>>(
                                 future: _fetchTopThree(),
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return const Center(child: CircularProgressIndicator());
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
                                   }
-                                  if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
-                                    return const Center(child: Text("No leaderboard data available"));
+                                  if (snapshot.hasError ||
+                                      snapshot.data == null ||
+                                      snapshot.data!.isEmpty) {
+                                    return const Center(
+                                        child: Text(
+                                            "No leaderboard data available"));
                                   }
 
-                                  List<Map<String, dynamic>> topThree = snapshot.data!;
+                                  List<Map<String, dynamic>> topThree =
+                                      snapshot.data!;
 
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -446,11 +484,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 10),
-                                      _leaderboardEntry("1. ${topThree[0]['name']}", topThree[0]['score'], Colors.amber),
+                                      _leaderboardEntry(
+                                          "1. ${topThree[0]['name']}",
+                                          topThree[0]['score'],
+                                          Colors.amber),
                                       if (topThree.length > 1)
-                                        _leaderboardEntry("2. ${topThree[1]['name']}", topThree[1]['score'], Colors.grey),
+                                        _leaderboardEntry(
+                                            "2. ${topThree[1]['name']}",
+                                            topThree[1]['score'],
+                                            Colors.grey),
                                       if (topThree.length > 2)
-                                        _leaderboardEntry("3. ${topThree[2]['name']}", topThree[2]['score'], Colors.brown),
+                                        _leaderboardEntry(
+                                            "3. ${topThree[2]['name']}",
+                                            topThree[2]['score'],
+                                            Colors.brown),
                                     ],
                                   );
                                 },
@@ -498,12 +545,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Card(
                             child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Center(child: CircularProgressIndicator()),
-                            ));
+                          padding: EdgeInsets.all(12.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        ));
                       }
 
-                      final impactData = snapshot.data ?? {'co2': 0, 'water': 0, 'waste': 0};
+                      final impactData =
+                          snapshot.data ?? {'co2': 0, 'water': 0, 'waste': 0};
 
                       return Card(
                         color: Colors.white,
@@ -527,25 +575,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               SizedBox(height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
                                   _impactMetric(
                                     icon: Icons.co2,
-                                    value: impactData['co2']!.toStringAsFixed(1),
+                                    value:
+                                        impactData['co2']!.toStringAsFixed(1),
                                     label: "CO₂ Saved",
                                     unit: "kg",
                                     color: Colors.blue,
                                   ),
                                   _impactMetric(
                                     icon: Icons.water_drop,
-                                    value: impactData['water']!.toStringAsFixed(0),
+                                    value:
+                                        impactData['water']!.toStringAsFixed(0),
                                     label: "Water Saved",
                                     unit: "L",
                                     color: Colors.lightBlue,
                                   ),
                                   _impactMetric(
                                     icon: Icons.delete_outline,
-                                    value: impactData['waste']!.toStringAsFixed(1),
+                                    value:
+                                        impactData['waste']!.toStringAsFixed(1),
                                     label: "Waste Diverted",
                                     unit: "kg",
                                     color: Colors.orange,
@@ -568,7 +620,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        onPressed: () {},
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
+        },
         shape: const CircleBorder(),
         child: const Icon(Icons.qr_code, color: Colors.white),
       ),
@@ -625,7 +686,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       DateTime now = DateTime.now();
       DateTime startOfWeek =
-      now.subtract(Duration(days: now.weekday - 1)); // Monday
+          now.subtract(Duration(days: now.weekday - 1)); // Monday
       DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
 
       // Fetch all challenges for the user (without range filter)
@@ -637,20 +698,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Map<int, bool> streakDays = {for (int i = 0; i < 7; i++) i: false};
       for (var doc in userChallengesSnapshot.docs) {
         Map<String, dynamic>? challengeData =
-        doc.data() as Map<String, dynamic>?;
+            doc.data() as Map<String, dynamic>?;
 
         if (challengeData == null || !challengeData.containsKey('lastUpdated'))
           continue;
 
         Timestamp? challengeTimestamp =
-        challengeData['lastUpdated'] as Timestamp?;
+            challengeData['lastUpdated'] as Timestamp?;
         if (challengeTimestamp == null) continue;
 
         DateTime challengeDate = challengeTimestamp.toDate();
 
         // Manually filter the timestamp in Dart
         if (challengeDate
-            .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+                .isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
             challengeDate.isBefore(endOfWeek.add(const Duration(seconds: 1)))) {
           int dayIndex = challengeDate.weekday - 1; // Convert Mon-Sun to 0-6
           streakDays[dayIndex] = true;
@@ -690,6 +751,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
     return weekdays[index];
   }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -705,7 +767,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _getCurrentWeekDateRange() {
     DateTime now = DateTime.now();
     DateTime startOfWeek =
-    now.subtract(Duration(days: now.weekday - 1)); // Monday
+        now.subtract(Duration(days: now.weekday - 1)); // Monday
     DateTime endOfWeek = startOfWeek.add(const Duration(days: 6)); // Sunday
     return "${startOfWeek.day} - ${endOfWeek.day} ${_getMonthName(startOfWeek)}";
   }

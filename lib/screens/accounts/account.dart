@@ -6,6 +6,8 @@ import 'about.dart';
 import '../widgets/bottom_navbar.dart';
 import 'UserSupport.dart';
 import 'Leaderboard.dart';
+import '../qr_scanner_screen.dart';
+import '../widgets/qr_helper.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -203,8 +205,16 @@ class _AccountPageState extends State<AccountPage>
             scale: scale,
             child: FloatingActionButton(
               backgroundColor: Colors.green,
-              onPressed: () {
-                Navigator.pushNamed(context, '/qr_scan');
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const QRScannerScreen()),
+                );
+
+                if (result != null) {
+                  await handleUniversalQRScan(context, result);
+                }
               },
               shape: const CircleBorder(),
               child: const Icon(Icons.qr_code, color: Colors.white),
