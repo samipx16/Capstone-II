@@ -9,6 +9,7 @@ import '../qr_scanner_screen.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../widgets/bottom_navbar.dart';
 import 'package:confetti/confetti.dart';
+import '../widgets/qr_helper.dart';
 
 class TrackingMethodsScreen extends StatefulWidget {
   final String challengeID;
@@ -197,15 +198,11 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
 
   Future<void> _handlePhotoUpload() async {
     final picker = ImagePicker();
-
-    // Ask user whether they want to use camera or gallery
     final ImageSource? source = await _selectImageSource();
-    if (source == null) return; // User canceled the selection
+    if (source == null) return;
 
     final pickedFile = await picker.pickImage(source: source);
-
     if (pickedFile == null) {
-      debugPrint("❌ No image selected");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❌ No image selected")),
       );
@@ -214,45 +211,60 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
 
     File imageFile = File(pickedFile.path);
     setState(() {
-      _isUploadingPhoto = true; // Show loading spinner
+      _isUploadingPhoto = true;
     });
-    String fileName =
-        "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
-    FirebaseStorage storage = FirebaseStorage.instance;
-    Reference storageRef = storage.ref().child(fileName);
 
     try {
-      // Upload image to Firebase Storage
+      //Upload image to Firebase Storage
+      String fileName =
+          "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
       UploadTask uploadTask = storageRef.putFile(imageFile);
       TaskSnapshot snapshot = await uploadTask;
-
-      // Get the image URL
       String imageUrl = await snapshot.ref.getDownloadURL();
 
-      // First: store the photo URL separately
-      await _firestore
+      //Load latest progress from Firestore
+      final docRef = _firestore
           .collection('user_challenges')
-          .doc("${_user!.uid}_${widget.challengeID}")
-          .set({
+          .doc("${_user!.uid}_${widget.challengeID}");
+      DocumentSnapshot doc = await docRef.get();
+
+      int currentProgress = 0;
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        currentProgress = data['progress'] ?? 0;
+      }
+
+      int newProgress = currentProgress + 1;
+      bool isCompleted = newProgress >= widget.requiredProgress;
+      String newStatus = isCompleted ? "completed" : "in_progress";
+
+      //Write all fields at once
+      await docRef.set({
+        'challengeID': widget.challengeID,
+        'userID': _user!.uid,
         'photoUrl': imageUrl,
+        'progress': newProgress,
+        'status': newStatus,
+        'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Then: trigger the progress update logic (confetti, bar, etc)
-      await _updateChallengeProgress(_progress + 1);
+      // Confetti if completed
+      if (isCompleted) {
+        _confettiController?.play();
+      }
 
-      // Update UI with the image
       setState(() {
+        _progress = newProgress;
         _image = imageFile;
-        _isUploadingPhoto = false; // Hide loading spinner
+        _isUploadingPhoto = false;
       });
 
-      debugPrint("✅ Image uploaded successfully: $imageUrl");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("✅ Photo uploaded and challenge completed!")),
+        const SnackBar(content: Text("✅ Photo uploaded and progress saved!")),
       );
     } catch (e) {
-      debugPrint("❌ Image upload failed: $e");
+      debugPrint("❌ Upload failed: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Upload failed: $e")),
       );
@@ -589,8 +601,15 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
       //  QR scan button
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/qr_scan');
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
         },
         shape: const CircleBorder(),
         child: const Icon(Icons.qr_code, color: Colors.white),
