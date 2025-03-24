@@ -4,9 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math'; // For random facts
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // Needed for kIsWeb
+import 'package:flutter/foundation.dart';
 import '../qr_scanner_screen.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../widgets/bottom_navbar.dart';
+import 'package:confetti/confetti.dart';
+import '../widgets/qr_helper.dart';
 
 class TrackingMethodsScreen extends StatefulWidget {
   final String challengeID;
@@ -40,26 +43,57 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
     "One tree can absorb as much carbon in a year as a car produces while driving 26,000 miles!",
     "LED bulbs use at least 75% less energy and last 25 times longer than traditional bulbs.",
   ];
+  int _currentIndex = 1;
+  ConfettiController? _confettiController;
+  String? _challengeTitle;
+  String? _challengeDescription;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
     super.initState();
     _user = _auth.currentUser;
     _loadUserChallengeProgress();
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 2));
+  }
+
+  @override
+  void dispose() {
+    _confettiController?.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   Future<void> _loadUserChallengeProgress() async {
     if (_user == null) return;
 
+    // Load progress from user_challenges
     DocumentSnapshot doc = await _firestore
         .collection('user_challenges')
         .doc("${_user!.uid}_${widget.challengeID}")
         .get();
 
-    if (doc.exists) {
-      var data = doc.data() as Map<String, dynamic>;
+    // Load challenge details (title, description) from challenges collection
+    DocumentSnapshot challengeDoc =
+        await _firestore.collection('challenges').doc(widget.challengeID).get();
+
+    if (mounted) {
       setState(() {
-        _progress = data['progress'] ?? 0;
+        _progress = doc.exists
+            ? (doc.data() as Map<String, dynamic>)['progress'] ?? 0
+            : 0;
+
+        if (challengeDoc.exists) {
+          var challengeData = challengeDoc.data() as Map<String, dynamic>;
+          _challengeTitle = challengeData['title'];
+          _challengeDescription = challengeData['description'];
+        }
       });
     }
   }
@@ -93,12 +127,13 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         'lastUpdated': FieldValue.serverTimestamp(),
         'completedChallengesCount': isCompleted
             ? existingCompletedCount + 1
-            : existingCompletedCount, // ✅ Increment count only when completed
+            : existingCompletedCount, // Increment count only when completed
       }, SetOptions(merge: true));
 
       //  If the challenge is completed, update lifetime points
       if (isCompleted) {
         await _updateLifetimePoints();
+        _confettiController?.play();
       }
 
       setState(() {
@@ -140,7 +175,7 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         currentLifetimePoints = userData['lifetimePoints'] ?? 0;
       }
 
-      // ✅ Update Firestore with the new lifetime points
+      // Update Firestore with the new lifetime points
       await userDocRef.set({
         'lifetimePoints': currentLifetimePoints + challengePoints,
       }, SetOptions(merge: true));
@@ -163,15 +198,11 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
 
   Future<void> _handlePhotoUpload() async {
     final picker = ImagePicker();
-
-    // Ask user whether they want to use camera or gallery
     final ImageSource? source = await _selectImageSource();
-    if (source == null) return; // User canceled the selection
+    if (source == null) return;
 
     final pickedFile = await picker.pickImage(source: source);
-
     if (pickedFile == null) {
-      debugPrint("❌ No image selected");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("❌ No image selected")),
       );
@@ -179,46 +210,67 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
     }
 
     File imageFile = File(pickedFile.path);
-    String fileName =
-        "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
-    FirebaseStorage storage = FirebaseStorage.instance;
-    Reference storageRef = storage.ref().child(fileName);
+    setState(() {
+      _isUploadingPhoto = true;
+    });
 
     try {
-      // Upload image to Firebase Storage
+      //Upload image to Firebase Storage
+      String fileName =
+          "challenge_photos/${_user!.uid}_${widget.challengeID}_${DateTime.now().millisecondsSinceEpoch}.jpg";
+      Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
       UploadTask uploadTask = storageRef.putFile(imageFile);
       TaskSnapshot snapshot = await uploadTask;
-
-      // Get the image URL
       String imageUrl = await snapshot.ref.getDownloadURL();
 
-      // Update Firestore with image URL
-      await _firestore
+      //Load latest progress from Firestore
+      final docRef = _firestore
           .collection('user_challenges')
-          .doc("${_user!.uid}_${widget.challengeID}")
-          .set({
+          .doc("${_user!.uid}_${widget.challengeID}");
+      DocumentSnapshot doc = await docRef.get();
+
+      int currentProgress = 0;
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        currentProgress = data['progress'] ?? 0;
+      }
+
+      int newProgress = currentProgress + 1;
+      bool isCompleted = newProgress >= widget.requiredProgress;
+      String newStatus = isCompleted ? "completed" : "in_progress";
+
+      //Write all fields at once
+      await docRef.set({
         'challengeID': widget.challengeID,
-        'photoUrl': imageUrl, // Store URL in Firestore
-        'status': 'completed',
-        'progress': widget.requiredProgress,
+        'userID': _user!.uid,
+        'photoUrl': imageUrl,
+        'progress': newProgress,
+        'status': newStatus,
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Update UI state
+      // Confetti if completed
+      if (isCompleted) {
+        _confettiController?.play();
+      }
+
       setState(() {
+        _progress = newProgress;
         _image = imageFile;
+        _isUploadingPhoto = false;
       });
 
-      debugPrint("✅ Image uploaded successfully: $imageUrl");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("✅ Photo uploaded and challenge completed!")),
+        const SnackBar(content: Text("✅ Photo uploaded and progress saved!")),
       );
     } catch (e) {
-      debugPrint("❌ Image upload failed: $e");
+      debugPrint("❌ Upload failed: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Upload failed: $e")),
       );
+      setState(() {
+        _isUploadingPhoto = false;
+      });
     }
   }
 
@@ -368,36 +420,42 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
       case "Photo Upload":
         return Column(
           children: [
-            _image != null
-                ? Image.file(_image!,
-                    width: 200, height: 200, fit: BoxFit.cover)
-                : FutureBuilder<DocumentSnapshot>(
-                    future: _firestore
-                        .collection('user_challenges')
-                        .doc("${_user!.uid}_${widget.challengeID}")
-                        .get(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      }
-                      if (!snapshot.hasData || !snapshot.data!.exists) {
-                        return const Text("No Image Uploaded");
-                      }
+            if (_isUploadingPhoto)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: CircularProgressIndicator(),
+              )
+            else if (_image != null)
+              Image.file(_image!, width: 200, height: 200, fit: BoxFit.cover)
+            else
+              FutureBuilder<DocumentSnapshot>(
+                future: _firestore
+                    .collection('user_challenges')
+                    .doc("${_user!.uid}_${widget.challengeID}")
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  }
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text("No Image Uploaded");
+                  }
 
-                      var data = snapshot.data!.data() as Map<String, dynamic>;
-                      String? imageUrl = data['photoUrl'];
+                  var data = snapshot.data!.data() as Map<String, dynamic>;
+                  String? imageUrl = data['photoUrl'];
 
-                      if (imageUrl != null) {
-                        return Image.network(imageUrl,
-                            width: 200, height: 200, fit: BoxFit.cover);
-                      } else {
-                        return const Text("No Image Uploaded");
-                      }
-                    },
-                  ),
+                  if (imageUrl != null) {
+                    return Image.network(imageUrl,
+                        width: 200, height: 200, fit: BoxFit.cover);
+                  } else {
+                    return const Text("No Image Uploaded");
+                  }
+                },
+              ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: isCompleted ? null : _handlePhotoUpload,
+              onPressed:
+                  isCompleted || _isUploadingPhoto ? null : _handlePhotoUpload,
               child: const Text("Upload Photo"),
             ),
           ],
@@ -424,47 +482,139 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Track Challenge"),
+        title: const Text(
+          "Track Challenge",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.green,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            Text("Progress: $_progress / ${widget.requiredProgress}",
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: LinearProgressIndicator(
-                value: _progress / widget.requiredProgress,
-                backgroundColor: Colors.grey[300],
-                color: Colors.green,
-                minHeight: 10,
+      body: Stack(
+        children: [
+          // Background image
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Opacity(
+                opacity: 0.20,
+                child: Image.asset('assets/unt-logo.png'),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // 🔥 Fix: Replace the generic button with the correct tracking method UI
-            _buildTrackingUI(),
-
-            if (_randomFact != null) ...[
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Text(
-                  "🌱 Did You Know? $_randomFact",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16, fontStyle: FontStyle.italic),
-                ),
+          ),
+          if (_confettiController != null)
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController!,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                numberOfParticles: 30,
+                maxBlastForce: 10,
+                minBlastForce: 5,
+                emissionFrequency: 0.1,
+                gravity: 0.3,
+                colors: const [Colors.green, Colors.lightGreen, Colors.white],
               ),
-            ]
-          ],
-        ),
+            ),
+
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_challengeTitle != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          _challengeTitle!,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromARGB(255, 0, 0, 0),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _challengeDescription ?? '',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                Text("Progress: $_progress / ${widget.requiredProgress}",
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Container(
+                    height: 20,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color.fromARGB(255, 112, 112, 112),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: LinearProgressIndicator(
+                        value: _progress / widget.requiredProgress,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildTrackingUI(),
+                if (_randomFact != null) ...[
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Text(
+                      "🌱 Did You Know? $_randomFact",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 16, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ]
+              ],
+            ),
+          ),
+        ],
       ),
+      // nav bar
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+      ),
+
+      //  QR scan button
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green,
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
+        },
+        shape: const CircleBorder(),
+        child: const Icon(Icons.qr_code, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
