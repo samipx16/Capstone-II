@@ -62,13 +62,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     String query = _searchController.text.trim().toLowerCase();
 
     if (query.isEmpty) {
-      // ✅ If search bar is empty, show default categories
+      // If search bar is empty, show default categories
       setState(() {
         _filteredChallenges = [];
         _isSearching = false;
       });
     } else {
-      // ✅ Perform search if there is text
+      // Perform search if there is text
       _searchChallengesFromFirestore(query);
     }
   }
@@ -176,19 +176,18 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                               description: challenge["description"],
                               icon: challenge["icon"],
                               imagePath: challenge["image"],
-                              challengeID:
-                                  challenge["id"], // ✅ Pass challenge ID
+                              challengeID: challenge["id"], // Pass challenge ID
                               trackingMethod: challenge[
-                                  "trackingMethod"], // ✅ Pass tracking method
+                                  "trackingMethod"], // Pass tracking method
                               requiredProgress: challenge[
-                                  "requiredProgress"], // ✅ Pass required progress
-                              status: challenge[
-                                  "status"], // ✅ Pass challenge status
+                                  "requiredProgress"], // Pass required progress
+                              status:
+                                  challenge["status"], //  Pass challenge status
                             );
                           },
                         ))
                   : ListView.builder(
-                      // ✅ Show Daily, Weekly, and One-time Challenges when NOT searching
+                      //  Show Daily, Weekly, and One-time Challenges when NOT searching
                       itemCount: challengeTypes.length,
                       itemBuilder: (context, index) {
                         final category = challengeTypes[index];
@@ -242,11 +241,11 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     required String challengeID,
     required String trackingMethod,
     required int requiredProgress,
-    required String status, // ✅ Added challenge status
+    required String status, // Added challenge status
   }) {
     return GestureDetector(
       onTap: () {
-        // ✅ Check if this is a category (Daily, Weekly, One-time)
+        // Check if this is a category (Daily, Weekly, One-time)
         if (challengeID.isEmpty) {
           // Navigate to the respective challenge screen
           if (title.contains("Daily")) {
@@ -257,7 +256,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             Navigator.pushNamed(context, "/oneTimeChallenges");
           }
         } else {
-          // ✅ Normal challenge behavior
+          // Normal challenge behavior
           if (status == 'completed') {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -266,7 +265,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
             );
           } else {
-            // ✅ Navigate to Tracking Methods Screen
+            // Navigate to Tracking Methods Screen
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -287,51 +286,70 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Icon on the left
               CircleAvatar(
                 radius: 35,
                 backgroundColor: Colors.green.shade100,
-                child: Icon(icon, color: Colors.green, size: 35),
+                child: Icon(icon, color: Colors.green, size: 30),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
 
-              // Expanded Title & Description
+              // Title & Description in the center, vertically aligned
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style:
-                          const TextStyle(fontSize: 14, color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ✅ Show "Completed" status for searched challenges
-              challengeID.isNotEmpty && status == "completed"
-                  ? const Chip(
-                      label: Text(
-                        "Completed",
-                        style: TextStyle(
-                          color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0), // centers vertically better
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      backgroundColor: Colors.green,
-                    )
-                  : const SizedBox(), // Otherwise, show nothing
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Image or "Completed" chip on the right
+              if (challengeID.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      imagePath,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              else if (status == "completed")
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Chip(
+                    label: Text(
+                      "Completed",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                )
             ],
           ),
         ),
