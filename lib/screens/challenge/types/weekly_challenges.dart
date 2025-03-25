@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../tracking_methods.dart';
 import './../../widgets/bottom_navbar.dart';
+import './../../widgets/qr_helper.dart';
+import '../../qr_scanner_screen.dart';
 
 class WeeklyChallengesScreen extends StatefulWidget {
   const WeeklyChallengesScreen({super.key});
@@ -102,11 +104,15 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
                               Timestamp lastUpdated =
                                   userChallengeData['lastUpdated'] as Timestamp;
                               DateTime lastUpdatedDate = lastUpdated.toDate();
-                              DateTime now = DateTime.now();
+                              DateTime currentTime = DateTime.now();
+                              DateTime startOfWeek = DateTime(currentTime.year,
+                                      currentTime.month, currentTime.day)
+                                  .subtract(
+                                      Duration(days: currentTime.weekday - 1));
 
-                              //  If completed & lastUpdated is within 7 days, show "Completed"
+                              //  Checks Monday for weekly reset, show "Completed"
                               if (status == 'completed' &&
-                                  now.difference(lastUpdatedDate).inDays < 7) {
+                                  lastUpdatedDate.isAfter(startOfWeek)) {
                                 return const Chip(
                                   label: Text(
                                     "Completed",
@@ -142,8 +148,15 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/qr_scan');
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
         },
         shape: const CircleBorder(),
         child: const Icon(Icons.qr_code, color: Colors.white),
@@ -179,28 +192,42 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
 
     DocumentSnapshot userChallengeSnapshot = await userChallengeRef.get();
 
-    int existingCompletedCount = 0;
     if (userChallengeSnapshot.exists) {
-      var userChallengeData =
-          userChallengeSnapshot.data() as Map<String, dynamic>;
-      existingCompletedCount =
-          userChallengeData['completedChallengesCount'] ?? 0;
+      var data = userChallengeSnapshot.data() as Map<String, dynamic>;
+      Timestamp lastUpdated = data['lastUpdated'];
+      DateTime lastUpdatedDate = lastUpdated.toDate();
+
+      DateTime now = DateTime.now();
+      DateTime startOfWeek = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: now.weekday - 1));
+
+      // Only reset if last update was before this week
+      if (lastUpdatedDate.isBefore(startOfWeek)) {
+        await userChallengeRef.set({
+          'progress': 0,
+          'status': 'not_started',
+          'lastUpdated': Timestamp.now(),
+        }, SetOptions(merge: true));
+      }
     }
 
-    await userChallengeRef.set({
-      'challengeID': challengeID,
-      'userID': _user!.uid,
-      'status': 'not_started', // Ensure status resets
-      'progress': 0,
-      'requiredProgress': requiredProgress,
-      'lastUpdated': Timestamp.now(),
-      'completedChallengesCount':
-          existingCompletedCount, // Keep previous completions
-    }, SetOptions(merge: true));
+    // Only set if the challenge is not already started
+    if (!userChallengeSnapshot.exists) {
+      await userChallengeRef.set({
+        'challengeID': challengeID,
+        'userID': _user!.uid,
+        'status': 'not_started',
+        'progress': 0,
+        'requiredProgress': requiredProgress,
+        'lastUpdated': Timestamp.now(),
+        'completedChallengesCount': 0,
+      });
+    }
 
-    debugPrint("Weekly challenge reset while keeping completed count.");
+    debugPrint(
+        "Weekly challenge loaded or initialized without resetting progress.");
 
-    setState(() {});
+    setState(() {}); // Optional UI update
 
     // Navigate to tracking methods screen
     Navigator.push(
