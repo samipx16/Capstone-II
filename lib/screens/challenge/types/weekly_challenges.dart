@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../tracking_methods.dart';
 import './../../widgets/bottom_navbar.dart';
+import './../../widgets/qr_helper.dart';
+import '../../qr_scanner_screen.dart';
 
 class WeeklyChallengesScreen extends StatefulWidget {
   const WeeklyChallengesScreen({super.key});
@@ -146,8 +148,15 @@ class _WeeklyChallengesScreenState extends State<WeeklyChallengesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/qr_scan');
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+          );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
         },
         shape: const CircleBorder(),
         child: const Icon(Icons.qr_code, color: Colors.white),
