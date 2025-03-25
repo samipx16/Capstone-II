@@ -193,7 +193,10 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
     debugPrint(
         "Self-report button pressed for Challenge: ${widget.challengeID}");
 
-    await _updateChallengeProgress(widget.requiredProgress);
+    // Don't go beyond required progress
+    if (_progress < widget.requiredProgress) {
+      await _updateChallengeProgress(_progress + 1);
+    }
   }
 
   Future<void> _handlePhotoUpload() async {
