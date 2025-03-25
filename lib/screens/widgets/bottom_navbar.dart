@@ -13,13 +13,15 @@ Widget buildBottomNavItem({
   return Flexible(
     child: MaterialButton(
       onPressed: () {
-        onTap(index);
-        if (route.isNotEmpty) {
-          Navigator.pushNamed(context, route);
+        if (!isActive) {
+          onTap(index);
+          if (route.isNotEmpty) {
+            Navigator.pushReplacementNamed(context, route);
+          }
         }
       },
-      padding: EdgeInsets.symmetric(horizontal: 8.0),
-      minWidth: 0, // Remove the minimum width constraint
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      minWidth: 0,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -39,6 +41,7 @@ Widget buildBottomNavItem({
     ),
   );
 }
+
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
