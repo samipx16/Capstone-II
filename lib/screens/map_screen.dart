@@ -66,21 +66,60 @@ class MapScreenState extends State<MapScreen> {
         markerId: MarkerId(markerId),
         position: LatLng(lat, lng),
         icon: _customIcon ?? BitmapDescriptor.defaultMarker,
-        infoWindow: InfoWindow(
-          title: displayName,
-          snippet: '$wasteType\n📸 Tap to view the image',
-          onTap: () {
-            if (image != "N/A") {
-              _showImageBottomSheet(context, image, displayName);
-            }
-          },
-        ),
+        onTap: () {
+          _showCustomInfoBottomSheet(context, displayName, wasteType, image);
+        },
       );
     }).toSet();
 
     setState(() {
       _markers.addAll(loadedMarkers);
     });
+  }
+
+  void _showCustomInfoBottomSheet(
+      BuildContext context, String title, String wasteType, String imageUrl) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(16),
+        height: 200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(wasteType, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+                _showImageBottomSheet(context, imageUrl, title);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Text("📸 Click here to view image",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500)),
+                    Spacer(),
+                    Icon(Icons.open_in_new),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showImageBottomSheet(
@@ -146,7 +185,7 @@ class MapScreenState extends State<MapScreen> {
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: const CameraPosition(
-          target: LatLng(33.253801237793695, -97.15260379334741),
+          target: LatLng(33.2075, -97.152613),
           zoom: 15.0,
         ),
         markers: _markers,
