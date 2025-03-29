@@ -1,0 +1,506 @@
+[
+    {
+      "S.N": 1,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.205773,
+      "Longitude": -97.157429,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/80/attachments/530",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 2,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.207113,
+      "Longitude": -97.156494,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 3,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2074446552443,
+      "Longitude": -97.1546812934318,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 4,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.208037067719,
+      "Longitude": -97.1552878946866,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 5,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2093408203154,
+      "Longitude": -97.155369737792,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/1758/attachments/533",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 6,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2116165918203,
+      "Longitude": -97.1548982412916,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/56/attachments/1333",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 7,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2116081765244,
+      "Longitude": -97.1537395269974,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/58/attachments/1335",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 8,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.211957642454,
+      "Longitude": -97.153114886027,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 9,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.211492937888,
+      "Longitude": -97.1527572430436,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 10,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2114985480931,
+      "Longitude": -97.1526834822987,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/1749/attachments/124",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 11,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2109066184491,
+      "Longitude": -97.1523042128539,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/66/attachments/1347",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 12,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2100853776985,
+      "Longitude": -97.152953145897,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 13,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.210453770201,
+      "Longitude": -97.1514876888839,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/64/attachments/1349",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 14,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2115091502093,
+      "Longitude": -97.1510838863914,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 15,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2135998516662,
+      "Longitude": -97.1505526884749,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/24/attachments/1338",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 16,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2138622177047,
+      "Longitude": -97.1508553563042,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/1750/attachments/121",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 17,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2127750420498,
+      "Longitude": -97.1496565811931,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 18,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2127673378443,
+      "Longitude": -97.1485417950626,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/30/attachments/1346",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 19,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.214016325178,
+      "Longitude": -97.1483621215833,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/22/attachments/1339",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 20,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2136429022135,
+      "Longitude": -97.1470940198116,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/20/attachments/1341",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 21,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2135388974519,
+      "Longitude": -97.1462144661038,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/18/attachments/1344",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 22,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2116814796931,
+      "Longitude": -97.1499112091828,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 23,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2114597736571,
+      "Longitude": -97.1492743239473,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 24,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2116648209897,
+      "Longitude": -97.148343736619,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 25,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2116895331896,
+      "Longitude": -97.1475358045452,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/10/attachments/1360",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 26,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2112216752309,
+      "Longitude": -97.1465049591311,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/124/attachments/1358",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 27,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2109390416516,
+      "Longitude": -97.1465263106569,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/120/attachments/1354",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 28,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.211102860528,
+      "Longitude": -97.1466872431913,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/122/attachments/1356",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 29,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2114685759101,
+      "Longitude": -97.1461588839766,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 30,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2114484150962,
+      "Longitude": -97.1450786060083,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 31,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2106055783038,
+      "Longitude": -97.1463586753099,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 32,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2106476552596,
+      "Longitude": -97.1466812109308,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/118/attachments/1353",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 33,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2103290273711,
+      "Longitude": -97.1463344572666,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/938/attachments/1372",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 34,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2103461208195,
+      "Longitude": -97.1453506624276,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 35,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2099279522109,
+      "Longitude": -97.1461813857342,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/115/attachments/1370",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 36,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2092055687383,
+      "Longitude": -97.1464023515544,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/54/attachments/1381",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 37,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2088364067997,
+      "Longitude": -97.1463668122891,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 38,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2083322101104,
+      "Longitude": -97.1454187019395,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/48/attachments/1351",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 39,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2081686770045,
+      "Longitude": -97.148214574211,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/46/attachments/1389",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 40,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2088757140911,
+      "Longitude": -97.1483034605519,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 41,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2090781772065,
+      "Longitude": -97.1485138598726,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 42,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2097571870016,
+      "Longitude": -97.1476246847923,
+      "Image": "N/A",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 43,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2097526987483,
+      "Longitude": -97.1474999620782,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/131/attachments/1390",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 44,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2098874941001,
+      "Longitude": -97.1485789297055,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/40/attachments/1369",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 45,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2100176531523,
+      "Longitude": -97.1483308253816,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/38/attachments/1366",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 46,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2104377855577,
+      "Longitude": -97.1486199055493,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/36/attachments/1385",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 47,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2105903848498,
+      "Longitude": -97.1483899061304,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/34/attachments/1387",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 48,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2108715365179,
+      "Longitude": -97.1481074113096,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/931/attachments/1374",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 49,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2108989487353,
+      "Longitude": -97.1476784328077,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/933/attachments/1378",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 50,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2108712431441,
+      "Longitude": -97.1477415080551,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/130/attachments/1376",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 51,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2094586145819,
+      "Longitude": -97.1496279427724,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/84/attachments/1365",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 52,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.208771178932,
+      "Longitude": -97.1499791126553,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/92/attachments/1383",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 53,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2083950012052,
+      "Longitude": -97.1506030991278,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/90/attachments/1363",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 54,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2534375336533,
+      "Longitude": -97.1537538969105,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/96/attachments/84",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 55,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2536950239219,
+      "Longitude": -97.1509161843781,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/94/attachments/82",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    },
+    {
+      "S.N": 56,
+      "TrashCName": "Big Belly Bin",
+      "Latitude": 33.2550469853915,
+      "Longitude": -97.1532747226014,
+      "Image": "https://services6.arcgis.com/nwPkaLXTDexHnmsW/arcgis/rest/services/Waste_WFL1/FeatureServer/1/98/attachments/86",
+      "Waste-Stream": "Landfill and Recycle",
+      "Telly-Belly": "No"
+    }
+  ]

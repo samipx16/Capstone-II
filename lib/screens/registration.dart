@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dashboard.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -11,6 +12,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -19,17 +22,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _register() async {
     if (passwordController.text != confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Passwords do not match")),
+        const SnackBar(content: Text("Passwords do not match")),
       );
       return;
     }
+
     try {
-      await _auth.createUserWithEmailAndPassword(
+      final name = nameController.text.trim();
+      final List<String> nameParts = name.split(' ');
+      final String firstName = nameParts.isNotEmpty ? nameParts.first : "";
+      final String lastName = nameParts.length > 1 ? nameParts.sublist(1).join(" ") : "";
+
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'firstName': firstName,
+          'lastName': lastName,
+          'name': name, // for backward compatibility
+          'photoURL': "",
+          'lifetimePoints': 0,
+        });
+
+        await user.updateDisplayName(name);
+      }
+
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => DashboardScreen()));
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Registration Failed: ${e.toString()}")),
@@ -54,42 +81,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset('assets/eco_eagle_logo.png', height: 150),
-                      Text(
+                      const Text(
                         "Join Us & Get Started!",
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       _buildTextField(nameController, Icons.person, "First and Last Name"),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       _buildTextField(emailController, Icons.email, "Email"),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       _buildTextField(passwordController, Icons.lock, "Password", isPassword: true),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       _buildTextField(confirmPasswordController, Icons.lock, "Re-Type Password", isPassword: true),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                        onPressed: _register,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF00853E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00853E),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                           ),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 40, vertical: 15),
+                          child: const Text("REGISTER", style: TextStyle(color: Colors.white)),
                         ),
-                        child: Text("REGISTER",
-                            style: TextStyle(color: Colors.white)),
                       ),
-                      ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       TextButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/');
                         },
-                        child: Text(
+                        child: const Text(
                           "Already have an account? Sign In",
                           style: TextStyle(color: Colors.green, fontSize: 16),
                         ),
@@ -120,7 +144,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       obscureText: isPassword,
       decoration: InputDecoration(
         filled: true,
-        fillColor: Color(0x1A00853E),
+        fillColor: const Color(0x1A00853E),
         prefixIcon: Icon(icon),
         hintText: hint,
         border: OutlineInputBorder(

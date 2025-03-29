@@ -193,7 +193,10 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
     debugPrint(
         "Self-report button pressed for Challenge: ${widget.challengeID}");
 
-    await _updateChallengeProgress(widget.requiredProgress);
+    // Don't go beyond required progress
+    if (_progress < widget.requiredProgress) {
+      await _updateChallengeProgress(_progress + 1);
+    }
   }
 
   Future<void> _handlePhotoUpload() async {
@@ -366,13 +369,29 @@ class _TrackingMethodsScreenState extends State<TrackingMethodsScreen>
         debugPrint(
             "✅ QR Code Matched: $qrCode - ${binDoc['bin name']} at ${binDoc['location']}");
 
-        // Call Firestore update
-        await _updateChallengeProgress(_progress + 1);
+        // Map of challengeID to allowed QR codes
+        final Map<String, List<String>> allowedQRCodes = {
+          "recycle_5": ["BIN_01"],
+          "refill_station": ["WATER_01"],
+        };
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text("✅ Scanned ${binDoc['bin name']} successfully!")),
-        );
+        List<String>? allowedCodes = allowedQRCodes[widget.challengeID];
+
+        if (allowedCodes != null && allowedCodes.contains(qrCode)) {
+          await _updateChallengeProgress(_progress + 1);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text("✅ Scanned ${binDoc['bin name']} successfully!")),
+          );
+        } else {
+          debugPrint("🚫 QR Code not valid for this challenge: $qrCode");
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content:
+                    Text("❌ This QR code doesn't apply to this challenge.")),
+          );
+        }
       } else {
         debugPrint("❌ No matching QR Code found in Firestore: $qrCode");
 

@@ -16,8 +16,10 @@ class _SettingsPageState extends State<SettingsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _picker = ImagePicker();
+
   User? _user;
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   File? _image;
 
@@ -30,20 +32,21 @@ class _SettingsPageState extends State<SettingsPage> {
   void _fetchUserData() async {
     User? user = _auth.currentUser;
     if (user != null) {
-      setState(() {
-        _user = user;
-        _nameController.text = user.displayName ?? "";
-      });
+      setState(() => _user = user);
 
       DocumentSnapshot doc =
       await _firestore.collection('users').doc(user.uid).get();
+
       if (doc.exists) {
         setState(() {
-          _nameController.text = doc['name'] ?? "";
+          _firstNameController.text = doc['firstName'] ?? "";
+          _lastNameController.text = doc['lastName'] ?? "";
         });
       } else {
         await _firestore.collection('users').doc(user.uid).set({
-          'name': user.displayName ?? "User",
+          'firstName': '',
+          'lastName': '',
+          'name': '',
           'email': user.email,
           'photoURL': user.photoURL ?? "",
         });
@@ -54,23 +57,33 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _updateProfile() async {
     try {
       if (_user != null) {
+        String fullName =
+            "${_firstNameController.text} ${_lastNameController.text}";
         DocumentReference userRef =
         _firestore.collection('users').doc(_user!.uid);
+
         DocumentSnapshot docSnapshot = await userRef.get();
+
         if (!docSnapshot.exists) {
           await userRef.set({
-            'name': _nameController.text,
+            'firstName': _firstNameController.text,
+            'lastName': _lastNameController.text,
+            'name': fullName,
             'email': _user!.email,
             'photoURL': _user!.photoURL ?? "",
           });
         } else {
           await userRef.update({
-            'name': _nameController.text,
+            'firstName': _firstNameController.text,
+            'lastName': _lastNameController.text,
+            'name': fullName,
           });
         }
-        await _user!.updateDisplayName(_nameController.text);
+
+        await _user!.updateDisplayName(fullName);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Profile updated successfully")),
+          const SnackBar(content: Text("Profile updated successfully")),
         );
       }
     } catch (e) {
@@ -83,9 +96,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+      setState(() => _image = File(pickedFile.path));
       _uploadProfilePicture();
     }
   }
@@ -108,7 +119,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (!docSnapshot.exists) {
         await userRef.set({
-          'name': _user!.displayName ?? "User",
+          'firstName': '',
+          'lastName': '',
+          'name': '',
           'email': _user!.email,
           'photoURL': downloadURL,
         });
@@ -118,10 +131,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
       await _user!.updatePhotoURL(downloadURL);
 
-      setState(() {});
+      setState(() {}); // refresh UI
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Profile picture updated successfully")),
+        const SnackBar(content: Text("Profile picture updated successfully")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,19 +155,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (_passwordController.text.isNotEmpty) {
       try {
-        // Get the current user
         User? user = _auth.currentUser;
         if (user != null) {
-          // Reauthenticate the user with the current password
           AuthCredential credential = EmailAuthProvider.credential(
             email: user.email!,
-            password: currentPassword, // User must enter this
+            password: currentPassword,
           );
 
           await user.reauthenticateWithCredential(credential);
-
-          // If reauthentication is successful, update the password
           await user.updatePassword(_passwordController.text);
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Password updated successfully")),
           );
@@ -172,6 +182,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
   }
+
   Future<String?> _showCurrentPasswordDialog() async {
     TextEditingController currentPasswordController = TextEditingController();
 
@@ -193,7 +204,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, null), // Cancel
+              onPressed: () => Navigator.pop(context, null),
               child: const Text("Cancel"),
             ),
             ElevatedButton(
@@ -208,7 +219,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,15 +231,15 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-
-              // Profile Avatar with Edit Icon
               Stack(
                 alignment: Alignment.center,
                 children: [
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey[300],
-                    backgroundImage: _user?.photoURL != null ? NetworkImage(_user!.photoURL!) : null,
+                    backgroundImage: _user?.photoURL != null
+                        ? NetworkImage(_user!.photoURL!)
+                        : null,
                     child: _user?.photoURL == null
                         ? const Icon(Icons.person, size: 50, color: Colors.white)
                         : null,
@@ -238,30 +248,60 @@ class _SettingsPageState extends State<SettingsPage> {
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: _pickImage, // Open image picker when clicked
+                      onTap: _pickImage,
                       child: CircleAvatar(
                         radius: 16,
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.edit, size: 18, color: Colors.green),
+                        child: const Icon(Icons.edit, size: 18, color: Colors.green),
                       ),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
-              // Name Update Card
-              _buildSettingsCard(
-                icon: Icons.person,
-                title: "Update Name",
-                hintText: "Enter New Name",
-                controller: _nameController,
-                onPressed: _updateProfile,
-                buttonText: "Save Name",
+              // First and Last Name Fields Together
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Update Name", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 5),
+                      TextField(
+                        controller: _firstNameController,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.person, color: Colors.green),
+                          hintText: "Enter First Name",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _lastNameController,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.person_outline, color: Colors.green),
+                          hintText: "Enter Last Name",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: _updateProfile,
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                        child: const Text("Save Name", style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
-              // Password Change Card
+              const SizedBox(height: 10),
+
+              // Password Section
               _buildSettingsCard(
                 icon: Icons.lock,
                 title: "Change Password",
@@ -271,9 +311,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 buttonText: "Change Password",
                 obscureText: true,
               ),
-
-              // AI Art at Bottom
-
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../challenge/tracking_methods.dart';
 
 Future<void> handleUniversalQRScan(
     BuildContext context, String scannedCode) async {
@@ -53,10 +54,39 @@ Future<void> handleUniversalQRScan(
         int hoursLeft = 24 - difference.inHours;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  "⏳ You have completed this challenge. Try again in $hoursLeft hour(s).")),
+            content: Text(
+                "⏳ You have completed this challenge. Try again in $hoursLeft hour(s)."),
+          ),
         );
-        return;
+
+        //Still navigate to tracking page
+        final challengeDoc =
+            await firestore.collection('challenges').doc(challengeID).get();
+
+        if (!challengeDoc.exists) {
+          debugPrint("❌ Challenge document not found.");
+          return;
+        }
+
+        final challengeData = challengeDoc.data() as Map<String, dynamic>;
+        final trackingMethod =
+            challengeData['trackingMethod'] ?? 'Manual Logging';
+        final requiredProgress = challengeData['requiredProgress'] ?? 1;
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TrackingMethodsScreen(
+                challengeID: challengeID,
+                trackingMethod: trackingMethod,
+                requiredProgress: requiredProgress,
+              ),
+            ),
+          );
+        }
+
+        return; // Exit safely
       }
     }
 
@@ -92,6 +122,36 @@ Future<void> handleUniversalQRScan(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("✅ Progress updated for '$challengeID'!")),
     );
+    //Load challenge info
+    final challengeDoc =
+        await firestore.collection('challenges').doc(challengeID).get();
+    if (!challengeDoc.exists) {
+      debugPrint("❌ Challenge document not found.");
+      return;
+    }
+    final data = challengeDoc.data() as Map<String, dynamic>;
+    final trackingMethod = data['trackingMethod'] ?? 'Manual Logging';
+    //final requiredProgress = data['requiredProgress'] ?? 1;
+
+    //DEBUG LOGS
+    debugPrint("Navigating to tracking screen...");
+    debugPrint("challengeID: $challengeID");
+    debugPrint("trackingMethod: $trackingMethod");
+    debugPrint("requiredProgress: $requiredProgress");
+
+    // Navigation
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TrackingMethodsScreen(
+            challengeID: challengeID,
+            trackingMethod: trackingMethod,
+            requiredProgress: requiredProgress,
+          ),
+        ),
+      );
+    }
   } catch (e) {
     debugPrint("❌ Failed to update challenge: $e");
     ScaffoldMessenger.of(context).showSnackBar(

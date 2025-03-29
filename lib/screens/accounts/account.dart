@@ -196,31 +196,21 @@ class _AccountPageState extends State<AccountPage>
         ),
       ),
 
-      // QR Code Floating Action Button with Hover Animation
-      floatingActionButton: TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 300),
-        tween: Tween(begin: 1.0, end: 1.1),
-        builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: FloatingActionButton(
-              backgroundColor: Colors.green,
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const QRScannerScreen()),
-                );
-
-                if (result != null) {
-                  await handleUniversalQRScan(context, result);
-                }
-              },
-              shape: const CircleBorder(),
-              child: const Icon(Icons.qr_code, color: Colors.white),
-            ),
+      // Floating Action Button (QR Code Scanner)
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green,
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
           );
+
+          if (result != null) {
+            await handleUniversalQRScan(context, result);
+          }
         },
+        shape: const CircleBorder(),
+        child: const Icon(Icons.qr_code, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 

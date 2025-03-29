@@ -7,6 +7,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import './widgets/qr_helper.dart';
 import './qr_scanner_screen.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart' show rootBundle;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +21,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   // Index for the active bottom nav item (0: Home, 1: Challenges, 2: Milestones, 3: Account)
   int _currentIndex = 0;
+  BitmapDescriptor? _customIcon;
 
   // Simulated user streak data for the current week (Monday - Sunday)
   final List<bool?> weeklyContributions = [
@@ -47,12 +51,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _loadCustomMarker();
     _fetchTopThree();
     _user = _auth.currentUser;
     _fetchUserPoints();
     _fetchUserRank();
     _fetchRecycle();
     _fetchWeeklyChallenges();
+  }
+
+  Future<void> _loadCustomMarker() async {
+    final ByteData byteData = await rootBundle.load('assets/trash-can.webp');
+    final codec = await ui.instantiateImageCodec(
+      byteData.buffer.asUint8List(),
+      targetWidth: 64, // width in pixels
+      targetHeight: 64, // height in pixels
+    );
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    final byteDataPng = await image.toByteData(format: ui.ImageByteFormat.png);
+    final resizedBytes = byteDataPng!.buffer.asUint8List();
+
+    _customIcon = BitmapDescriptor.fromBytes(resizedBytes);
+    setState(() {});
   }
 
   Future<void> _fetchUserPoints() async {
@@ -384,8 +405,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     GoogleMap(
                                       initialCameraPosition:
                                           const CameraPosition(
-                                        target: LatLng(33.253801237793695,
-                                            -97.15260379334741),
+                                        target: LatLng(33.2075, -97.152613),
                                         zoom: 14,
                                       ),
                                       zoomControlsEnabled: false,
@@ -397,8 +417,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Marker(
                                           markerId:
                                               MarkerId("recycle_bin_preview"),
-                                          position: LatLng(33.253801237793695,
-                                              -97.15260379334741),
+                                          position: LatLng(33.2075, -97.152613),
+                                          icon: _customIcon ??
+                                              BitmapDescriptor.defaultMarker,
                                           infoWindow: InfoWindow(
                                               title: "UNT Recycle Bin Preview"),
                                         ),
