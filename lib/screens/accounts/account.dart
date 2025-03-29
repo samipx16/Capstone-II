@@ -197,22 +197,22 @@ class _AccountPageState extends State<AccountPage>
       ),
 
       // Floating Action Button (QR Code Scanner)
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const QRScannerScreen()),
-          );
-
-          if (result != null) {
-            await handleUniversalQRScan(context, result);
-          }
-        },
-        shape: const CircleBorder(),
-        child: const Icon(Icons.qr_code, color: Colors.white),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // floatingActionButton: FloatingActionButton(
+      //   backgroundColor: Colors.green,
+      //   onPressed: () async {
+      //     final result = await Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (context) => const QRScannerScreen()),
+      //     );
+      //
+      //     if (result != null) {
+      //       await handleUniversalQRScan(context, result);
+      //     }
+      //   },
+      //   shape: const CircleBorder(),
+      //   child: const Icon(Icons.qr_code, color: Colors.white),
+      // ),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // Bottom Navigation Bar
       bottomNavigationBar: BottomNavBar(
