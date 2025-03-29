@@ -506,19 +506,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 10),
                                       _leaderboardEntry(
-                                          "1. ${topThree[0]['name']}",
-                                          topThree[0]['score'],
-                                          Colors.amber),
+                                        "1. ${topThree[0]['name'].split(' ').first}",
+                                        topThree[0]['score'],
+                                        Colors.amber,
+                                      ),
                                       if (topThree.length > 1)
                                         _leaderboardEntry(
-                                            "2. ${topThree[1]['name']}",
-                                            topThree[1]['score'],
-                                            Colors.grey),
+                                          "2. ${topThree[1]['name'].split(' ').first}",
+                                          topThree[1]['score'],
+                                          Colors.grey,
+                                        ),
                                       if (topThree.length > 2)
                                         _leaderboardEntry(
-                                            "3. ${topThree[2]['name']}",
-                                            topThree[2]['score'],
-                                            Colors.brown),
+                                          "3. ${topThree[2]['name'].split(' ').first}",
+                                          topThree[2]['score'],
+                                          Colors.brown,
+                                        ),
                                     ],
                                   );
                                 },
