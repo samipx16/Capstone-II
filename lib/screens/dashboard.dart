@@ -237,24 +237,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF03AC52),
-              Color(0xFF00853E),
-            ],
-            stops: [0.11, 0.68],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        body: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF03AC52),
+                      Color(0xFF00853E),
+                    ],
+                    stops: [0.11, 0.68],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
+                        child: Column(
+
+                        crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     "Welcome Back!",
@@ -636,12 +641,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
 
                   SizedBox(height: 16),
-                ],
+                      ],
+                    ),
+                  ),
+                ),)
               ),
-            ),
-          ),
+              );
+            },
         ),
-      ),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () async {
