@@ -6,6 +6,11 @@
     <string>We need your location to show nearby recycle bins.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app requires location access to function properly.</string>
+    <key>LSApplicationQueriesSchemes</key>
+        <array>
+            <string>http</string>
+            <string>https</string>
+        </array>
 	<key>io.flutter.embedded_views_preview</key>
     <true/>
 	<key>CFBundleDevelopmentRegion</key>
