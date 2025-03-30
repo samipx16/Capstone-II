@@ -67,6 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -123,14 +124,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-            if (MediaQuery.of(context).viewInsets.bottom == 0)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Image.asset(
-                  'assets/trees.png',
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+            Align(
+            alignment: Alignment.bottomCenter,
+    child: IgnorePointer(
+    child: Image.asset(
+    'assets/trees.png',
+    width: double.infinity,
+    fit: BoxFit.cover,
+    ),)
               ),
 
           ],
