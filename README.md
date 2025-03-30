@@ -65,9 +65,19 @@ Top performers may be featured in UNT Sustainability social media campaigns and 
 
 ## Screenshots
 
-| Home Dashboard                          | Challenge Details                        | Milestone Badge                      | Account                             |
-|-----------------------------------------|------------------------------------------|--------------------------------------|-------------------------------------|
-| ![Dashboard](screenshots/dashboard.PNG) | ![Challenge](screenshots/challenges.PNG) | ![Badge](screenshots/milestones.PNG) | ![Account](screenshots/account.PNG) |
+### Login & Dashboard Views
+
+| Login                                  | Registration                             | Home Dashboard                          | Account                             |
+|----------------------------------------|------------------------------------------|------------------------------------------|-------------------------------------|
+| ![Login](screenshots/login.PNG)        | ![Register](screenshots/register.PNG)     | ![Dashboard](screenshots/dashboard.PNG) | ![Account](screenshots/account.PNG) |
+
+
+
+### Features: Challenges, Milestones & Map
+
+| Challenge Details                                                                 | Milestone Badges                                                                   | Map Views                                    |
+|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|----------------------------------------------|
+| ![Challenge 1](screenshots/challenges1.PNG)<br>![Challenge 2](screenshots/challenges2.PNG) | ![Badge 1](screenshots/milestones1.PNG)<br>![Badge 2](screenshots/milestones2.PNG) | ![Map 1](screenshots/map1.PNG)<br>![Map 2](screenshots/map2.PNG) |
 
 ---
 
@@ -108,7 +118,8 @@ Make sure you have Firebase set up for Android and iOS with the appropriate conf
 EcoEagle features a custom app icon and branding inspired by UNT’s school spirit.  
 To customize your app icon, ensure your image is properly formatted (1024x1024 PNG) and configured in `pubspec.yaml` under `flutter_launcher_icons`.
 
----
+![App Icon](assets/icon/app_icon.png)
+
 
 ## Contributing
 
