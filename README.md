@@ -65,18 +65,21 @@ Top performers may be featured in UNT Sustainability social media campaigns and 
 
 ## Screenshots
 
-| Home Dashboard                          | Challenge Details                        | Milestone Badge                          | Account                             |
-|-----------------------------------------|------------------------------------------|------------------------------------------|-------------------------------------|
-| ![Dashboard](screenshots/dashboard.PNG) | ![Challenge 1](screenshots/challenges1.PNG)<br>![Challenge 2](screenshots/challenges2.PNG) | ![Badge 1](screenshots/milestones1.PNG)<br>![Badge 2](screenshots/milestones2.PNG) | ![Account](screenshots/account.PNG) |
+### Login & Dashboard Views
+
+| Login                                  | Registration                             | Home Dashboard                          | Account                             |
+|----------------------------------------|------------------------------------------|------------------------------------------|-------------------------------------|
+| ![Login](screenshots/login.PNG)        | ![Register](screenshots/register.PNG)     | ![Dashboard](screenshots/dashboard.PNG) | ![Account](screenshots/account.PNG) |
+
+
+
+### Features: Challenges, Milestones & Map
+
+| Challenge Details                                                                 | Milestone Badges                                                                   | Map Views                                    |
+|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|----------------------------------------------|
+| ![Challenge 1](screenshots/challenges1.PNG)<br>![Challenge 2](screenshots/challenges2.PNG) | ![Badge 1](screenshots/milestones1.PNG)<br>![Badge 2](screenshots/milestones2.PNG) | ![Map 1](screenshots/map1.PNG)<br>![Map 2](screenshots/map2.PNG) |
 
 ---
-
-## Map
-
-| Map View 1                               | Map View 2                               |
-|------------------------------------------|------------------------------------------|
-| ![Map 1](screenshots/map1.PNG)           | ![Map 2](screenshots/map2.PNG)           |
-
 
 ## Built With
 
