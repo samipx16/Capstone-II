@@ -65,11 +65,18 @@ Top performers may be featured in UNT Sustainability social media campaigns and 
 
 ## Screenshots
 
-| Home Dashboard                          | Challenge Details                        | Milestone Badge                      | Account                             |
-|-----------------------------------------|------------------------------------------|--------------------------------------|-------------------------------------|
-| ![Dashboard](screenshots/dashboard.PNG) | ![Challenge](screenshots/challenges.PNG) | ![Badge](screenshots/milestones.PNG) | ![Account](screenshots/account.PNG) |
+| Home Dashboard                          | Challenge Details                        | Milestone Badge                          | Account                             |
+|-----------------------------------------|------------------------------------------|------------------------------------------|-------------------------------------|
+| ![Dashboard](screenshots/dashboard.PNG) | ![Challenge 1](screenshots/challenges1.PNG)<br>![Challenge 2](screenshots/challenges2.PNG) | ![Badge 1](screenshots/milestones1.PNG)<br>![Badge 2](screenshots/milestones2.PNG) | ![Account](screenshots/account.PNG) |
 
 ---
+
+## Map
+
+| Map View 1                               | Map View 2                               |
+|------------------------------------------|------------------------------------------|
+| ![Map 1](screenshots/map1.PNG)           | ![Map 2](screenshots/map2.PNG)           |
+
 
 ## Built With
 
