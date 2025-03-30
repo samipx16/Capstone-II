@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -17,24 +19,26 @@ class MapScreenState extends State<MapScreen> {
   final LatLng _initialPosition = const LatLng(33.2075, -97.152613);
   final Set<Marker> _markers = {};
   BitmapDescriptor? _customIcon;
+  LatLng? _currentLocation;
 
   @override
   void initState() {
     super.initState();
-    _initializeMarkers();
+    _initializeMap();
   }
 
-  Future<void> _initializeMarkers() async {
-    await _loadCustomMarker(); // wait for icon to load
-    await _loadMarkersFromJson(); // now load markers with icon
+  Future<void> _initializeMap() async {
+    await _loadCustomMarker();
+    await _getUserLocation();
+    await _loadMarkersFromJson();
   }
 
   Future<void> _loadCustomMarker() async {
     final ByteData byteData = await rootBundle.load('assets/trash-can.webp');
     final codec = await ui.instantiateImageCodec(
       byteData.buffer.asUint8List(),
-      targetWidth: 64, // width in pixels
-      targetHeight: 64, // height in pixels
+      targetWidth: 64,
+      targetHeight: 64,
     );
     final frame = await codec.getNextFrame();
     final image = frame.image;
@@ -42,7 +46,31 @@ class MapScreenState extends State<MapScreen> {
     final resizedBytes = byteDataPng!.buffer.asUint8List();
 
     _customIcon = BitmapDescriptor.fromBytes(resizedBytes);
-    setState(() {});
+  }
+
+  Future<void> _getUserLocation() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _currentLocation = LatLng(position.latitude, position.longitude);
+        _markers.add(
+          Marker(
+            markerId: MarkerId("current_location"),
+            position: _currentLocation!,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+            infoWindow: InfoWindow(title: "You are here"),
+          ),
+        );
+      });
+    }
   }
 
   Future<void> _loadMarkersFromJson() async {
@@ -57,9 +85,7 @@ class MapScreenState extends State<MapScreen> {
       final wasteType = bin["Waste-Stream"];
       final markerId = bin["S.N"].toString();
 
-      // Determine emoji
-      final prefixEmoji =
-          wasteType.toLowerCase().contains("recycle") ? "♻️" : "🗑️";
+      final prefixEmoji = wasteType.toLowerCase().contains("recycle") ? "♻️" : "🗑️";
       final displayName = "$prefixEmoji $name";
 
       return Marker(
@@ -67,7 +93,7 @@ class MapScreenState extends State<MapScreen> {
         position: LatLng(lat, lng),
         icon: _customIcon ?? BitmapDescriptor.defaultMarker,
         onTap: () {
-          _showCustomInfoBottomSheet(context, displayName, wasteType, image);
+          _showCustomInfoBottomSheet(context, displayName, wasteType, image, LatLng(lat, lng));
         },
       );
     }).toSet();
@@ -78,18 +104,22 @@ class MapScreenState extends State<MapScreen> {
   }
 
   void _showCustomInfoBottomSheet(
-      BuildContext context, String title, String wasteType, String imageUrl) {
+      BuildContext context,
+      String title,
+      String wasteType,
+      String imageUrl,
+      LatLng binLocation,
+      ) {
     showModalBottomSheet(
       context: context,
       builder: (_) => Container(
         padding: const EdgeInsets.all(16),
-        height: 200,
+        height: 220,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(wasteType, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 12),
@@ -99,8 +129,7 @@ class MapScreenState extends State<MapScreen> {
                 _showImageBottomSheet(context, imageUrl, title);
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
@@ -108,14 +137,34 @@ class MapScreenState extends State<MapScreen> {
                 child: const Row(
                   children: [
                     Text("📸 Click here to view image",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                     Spacer(),
                     Icon(Icons.open_in_new),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              icon: Icon(Icons.directions),
+              label: Text("Get Directions"),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () {
+                if (_currentLocation != null) {
+                  final url = Uri.parse(
+                    'https://www.google.com/maps/dir/?api=1'
+                        '&origin=${_currentLocation!.latitude},${_currentLocation!.longitude}'
+                        '&destination=${binLocation.latitude},${binLocation.longitude}'
+                        '&travelmode=walking',
+                  );
+                  launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Current location unavailable")),
+                  );
+                }
+              },
+            )
           ],
         ),
       ),
@@ -136,8 +185,7 @@ class MapScreenState extends State<MapScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Expanded(
               child: ClipRRect(
@@ -167,9 +215,7 @@ class MapScreenState extends State<MapScreen> {
   }
 
   void _onMapCreated(GoogleMapController controller) {
-    setState(() {
-      mapController = controller;
-    });
+    mapController = controller;
   }
 
   @override
@@ -184,10 +230,12 @@ class MapScreenState extends State<MapScreen> {
       appBar: AppBar(title: const Text("Closest Recycle Bin")),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: const CameraPosition(
-          target: LatLng(33.2075, -97.152613),
+        initialCameraPosition: CameraPosition(
+          target: _currentLocation ?? _initialPosition,
           zoom: 15.0,
         ),
+        myLocationEnabled: _currentLocation != null,
+        myLocationButtonEnabled: true,
         markers: _markers,
       ),
     );
