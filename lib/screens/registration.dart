@@ -123,14 +123,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Image.asset(
-                'assets/trees.png',
-                width: double.infinity,
-                fit: BoxFit.cover,
+            if (MediaQuery.of(context).viewInsets.bottom == 0)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Image.asset(
+                  'assets/trees.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
+
           ],
         ),
       ),
