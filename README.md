@@ -118,7 +118,8 @@ Make sure you have Firebase set up for Android and iOS with the appropriate conf
 EcoEagle features a custom app icon and branding inspired by UNT’s school spirit.  
 To customize your app icon, ensure your image is properly formatted (1024x1024 PNG) and configured in `pubspec.yaml` under `flutter_launcher_icons`.
 
----
+![App Icon](assets/icon/app_icon.png)
+
 
 ## Contributing
 
